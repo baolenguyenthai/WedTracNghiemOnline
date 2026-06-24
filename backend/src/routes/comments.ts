@@ -72,3 +72,19 @@ commentsRouter.post(
     res.json(ok({ comment }));
   })
 );
+
+// Xóa bình luận
+commentsRouter.delete(
+  "/questions/comments/:commentId",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const commentId = Number(req.params.commentId);
+    const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+    if (!comment) throw new AppError(404, "Không tìm thấy bình luận.");
+    if (comment.userId !== req.user!.id) {
+      throw new AppError(403, "Bạn không có quyền xóa bình luận này.");
+    }
+    await prisma.comment.delete({ where: { id: commentId } });
+    res.json(ok({ deleted: true }));
+  })
+);

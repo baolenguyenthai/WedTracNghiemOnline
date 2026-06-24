@@ -13,7 +13,7 @@ export function CommentSection({ questionId, token, currentUserId }: { questionI
     if (!token) return;
     setLoading(true);
     try {
-      const res = await apiFetch<{ comments: any[] }>(`/comments/${questionId}`, {}, token);
+      const res = await apiFetch<{ comments: any[] }>(`/questions/${questionId}/comments`, {}, token);
       setComments(res.data.comments);
     } catch (err) {
       console.error(err);
@@ -32,7 +32,7 @@ export function CommentSection({ questionId, token, currentUserId }: { questionI
     e.preventDefault();
     if (!content.trim() || !token) return;
     try {
-      await apiFetch(`/comments/${questionId}`, {
+      await apiFetch(`/questions/${questionId}/comments`, {
         method: "POST",
         body: JSON.stringify({ content })
       }, token);
@@ -46,7 +46,7 @@ export function CommentSection({ questionId, token, currentUserId }: { questionI
   const deleteComment = async (commentId: number) => {
     if (!token) return;
     try {
-      await apiFetch(`/comments/${commentId}`, { method: "DELETE" }, token);
+      await apiFetch(`/questions/comments/${commentId}`, { method: "DELETE" }, token);
       await loadComments();
     } catch (err) {
       console.error(err);
