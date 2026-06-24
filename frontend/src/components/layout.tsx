@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMemo, useState, useEffect } from "react";
-import { LayoutDashboard, Menu, LogOut, UserCircle2, ClipboardList, ShieldCheck, Upload, Medal, Heart, Clock3, BookOpen, Users, Layers3, Sparkles, BarChart3, CircleUserRound, X, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Menu, LogOut, UserCircle2, ClipboardList, ShieldCheck, Upload, Medal, Heart, Clock3, BookOpen, Users, Layers3, Sparkles, BarChart3, CircleUserRound, X, Sun, Moon, FileText } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { Badge, Button } from "./common";
@@ -167,6 +167,7 @@ export const adminNavItems: NavItem[] = [
   { key: "overview", label: "Tổng quan", icon: <LayoutDashboard size={16} /> },
   { key: "users", label: "Người dùng", icon: <Users size={16} /> },
   { key: "banks", label: "Bộ đề", icon: <ClipboardList size={16} /> },
+  { key: "exams", label: "Bài thi", icon: <FileText size={16} /> },
   { key: "catalog", label: "Môn & cấp", icon: <BookOpen size={16} /> },
   { key: "upload", label: "Tải lên / AI", icon: <Sparkles size={16} /> },
   { key: "stats", label: "Thống kê", icon: <BarChart3 size={16} /> },

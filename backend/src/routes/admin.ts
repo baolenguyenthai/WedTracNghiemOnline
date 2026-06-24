@@ -851,3 +851,83 @@ adminRouter.get(
     res.json(ok({ rows }));
   })
 );
+
+// ═══════════════════════════════════════════════
+// ADMIN EXAMS MANAGEMENT
+// ═══════════════════════════════════════════════
+
+// GET /admin/exams - Danh sách bài thi
+adminRouter.get(
+  "/admin/exams",
+  requireAuth,
+  requireRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    const search = String(req.query.search || "");
+    const bankId = req.query.bankId ? Number(req.query.bankId) : undefined;
+    const status = req.query.status as string | undefined; // "submitted" | "ongoing"
+
+    const where: Prisma.ExamWhereInput = {
+      ...(search ? {
+        OR: [
+          { user: { fullName: { contains: search } } },
+          { user: { username: { contains: search } } },
+          { bank: { name: { contains: search } } }
+        ]
+      } : {}),
+      ...(bankId ? { bankId } : {}),
+      ...(status === "submitted" ? { submittedAt: { not: null } } : {}),
+      ...(status === "ongoing" ? { submittedAt: null } : {})
+    };
+
+    const [exams, total] = await Promise.all([
+      prisma.exam.findMany({
+        where,
+        include: {
+          user: { select: { id: true, fullName: true, username: true } },
+          bank: { select: { id: true, name: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.exam.count({ where })
+    ]);
+
+    res.json(ok({
+      exams: exams.map(e => ({
+        id: e.id,
+        userId: e.userId,
+        userName: e.user.fullName,
+        username: e.user.username,
+        bankId: e.bankId,
+        bankName: e.bank.name,
+        score: e.score,
+        totalQuestions: e.totalQuestions,
+        correctCount: e.correctCount,
+        submittedAt: e.submittedAt,
+        createdAt: e.createdAt,
+        durationSeconds: e.durationSeconds
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    }));
+  })
+);
+
+// DELETE /admin/exams/:id - Xóa bài thi
+adminRouter.delete(
+  "/admin/exams/:id",
+  requireAuth,
+  requireRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    const exam = await prisma.exam.findUnique({ where: { id } });
+    if (!exam) throw new AppError(404, "Không tìm thấy bài thi.");
+    await prisma.examItem.deleteMany({ where: { examId: id } });
+    await prisma.exam.delete({ where: { id } });
+    res.json(ok({ deleted: true }));
+  })
+);
