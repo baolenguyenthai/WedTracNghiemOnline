@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f0e2a" />
+    <meta name="description" content="Ứng dụng trắc nghiệm trực tuyến - Làm bài thi, quản lý bộ đề, theo dõi kết quả học tập." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <title>UngDungTracNghiem — Trắc nghiệm thông minh</title>
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('ui-theme') || 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

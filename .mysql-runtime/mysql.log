@@ -1,0 +1,39 @@
+2026-06-23T13:40:31.688273Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-06-23T13:40:31.856319Z 0 [System] [MY-010116] [Server] /opt/homebrew/bin/mysqld (mysqld 9.5.0) starting as process 42973
+2026-06-23T13:40:31.856331Z 0 [System] [MY-015590] [Server] MySQL Server has access to 8 logical CPUs.
+2026-06-23T13:40:31.856340Z 0 [System] [MY-015590] [Server] MySQL Server has access to 8589934592 bytes of physical memory.
+2026-06-23T13:40:31.859439Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /Users/lebao/Documents/ung-dung-trac-nghiem-web/.mysql-data/ is case insensitive
+2026-06-23T13:40:31.871176Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-06-23T13:40:31.896882Z 1 [ERROR] [MY-013039] [InnoDB] Can't create UNDO tablespace innodb_undo_001  since './undo_001' already exists.
+2026-06-23T13:40:31.897053Z 1 [ERROR] [MY-012930] [InnoDB] Plugin initialization aborted with error Generic error.
+2026-06-23T13:40:31.902489Z 1 [ERROR] [MY-010334] [Server] Failed to initialize DD Storage Engine
+2026-06-23T13:40:31.902572Z 0 [ERROR] [MY-010020] [Server] Data Dictionary initialization failed.
+2026-06-23T13:40:31.902587Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-06-23T13:40:31.909368Z 0 [System] [MY-010910] [Server] /opt/homebrew/bin/mysqld: Shutdown complete (mysqld 9.5.0)  Homebrew.
+2026-06-23T13:40:31.909387Z 0 [System] [MY-015016] [Server] MySQL Server - end.
+2026-06-23T13:40:46.503893Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-06-23T13:40:46.665525Z 0 [System] [MY-010116] [Server] /opt/homebrew/bin/mysqld (mysqld 9.5.0) starting as process 43523
+2026-06-23T13:40:46.665536Z 0 [System] [MY-015590] [Server] MySQL Server has access to 8 logical CPUs.
+2026-06-23T13:40:46.665545Z 0 [System] [MY-015590] [Server] MySQL Server has access to 8589934592 bytes of physical memory.
+2026-06-23T13:40:46.668659Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /Users/lebao/Documents/ung-dung-trac-nghiem-web/.mysql-data/ is case insensitive
+2026-06-23T13:40:46.674592Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-06-23T13:40:46.699628Z 1 [ERROR] [MY-013039] [InnoDB] Can't create UNDO tablespace innodb_undo_002  since './undo_002' already exists.
+2026-06-23T13:40:46.699658Z 1 [ERROR] [MY-012930] [InnoDB] Plugin initialization aborted with error Generic error.
+2026-06-23T13:40:46.703142Z 1 [ERROR] [MY-010334] [Server] Failed to initialize DD Storage Engine
+2026-06-23T13:40:46.703205Z 0 [ERROR] [MY-010020] [Server] Data Dictionary initialization failed.
+2026-06-23T13:40:46.703219Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-06-23T13:40:46.706570Z 0 [System] [MY-010910] [Server] /opt/homebrew/bin/mysqld: Shutdown complete (mysqld 9.5.0)  Homebrew.
+2026-06-23T13:40:46.706586Z 0 [System] [MY-015016] [Server] MySQL Server - end.
+2026-06-23T13:42:57.467108Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-06-23T13:42:57.654823Z 0 [System] [MY-010116] [Server] /opt/homebrew/bin/mysqld (mysqld 9.5.0) starting as process 47654
+2026-06-23T13:42:57.655069Z 0 [System] [MY-015590] [Server] MySQL Server has access to 8 logical CPUs.
+2026-06-23T13:42:57.655078Z 0 [System] [MY-015590] [Server] MySQL Server has access to 8589934592 bytes of physical memory.
+2026-06-23T13:42:57.662781Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /Users/lebao/Documents/ung-dung-trac-nghiem-web/.mysql-data/ is case insensitive
+2026-06-23T13:42:57.684989Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-06-23T13:42:57.727636Z 1 [ERROR] [MY-013039] [InnoDB] Can't create UNDO tablespace innodb_undo_001  since './undo_001' already exists.
+2026-06-23T13:42:57.728121Z 1 [ERROR] [MY-012930] [InnoDB] Plugin initialization aborted with error Generic error.
+2026-06-23T13:42:57.731485Z 1 [ERROR] [MY-010334] [Server] Failed to initialize DD Storage Engine
+2026-06-23T13:42:57.732372Z 0 [ERROR] [MY-010020] [Server] Data Dictionary initialization failed.
+2026-06-23T13:42:57.732860Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-06-23T13:42:57.740620Z 0 [System] [MY-010910] [Server] /opt/homebrew/bin/mysqld: Shutdown complete (mysqld 9.5.0)  Homebrew.
+2026-06-23T13:42:57.740642Z 0 [System] [MY-015016] [Server] MySQL Server - end.

@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id    Int     @id @default(autoincrement()) @map("vai_tro_id")
+  name  String  @unique @map("ten_vai_tro")
+  users User[]
+
+  @@map("vai_tro")
+}
+
+model User {
+  id            Int             @id @default(autoincrement()) @map("nguoi_dung_id")
+  username      String          @unique @db.VarChar(50) @map("ten_dang_nhap")
+  passwordHash  String          @db.VarChar(255) @map("mat_khau")
+  fullName      String?         @db.VarChar(100) @map("ho_ten")
+  email         String?         @unique @db.VarChar(100)
+  vaiTroId      Int?            @map("vai_tro_id")
+  status        Int?            @default(1) @map("trang_thai")
+  createdAt     DateTime        @default(now()) @map("ngay_tao")
+  vaiTro        Role?           @relation(fields: [vaiTroId], references: [id])
+  createdBanks  QuestionBank[]  @relation("BankCreator")
+  exams         Exam[]
+  favorites     FavoriteQuestion[]
+  comments      Comment[]
+  badges        UserBadge[]
+
+  @@map("nguoi_dung")
+}
+
+model Grade {
+  id    Int             @id @default(autoincrement()) @map("cap_hoc_id")
+  name  String          @unique @db.VarChar(50) @map("ten_cap_hoc")
+  banks QuestionBank[]
+
+  @@map("cap_hoc")
+}
+
+model Subject {
+  id    Int             @id @default(autoincrement()) @map("mon_hoc_id")
+  name  String          @unique @db.VarChar(100) @map("ten_mon_hoc")
+  banks QuestionBank[]
+
+  @@map("mon_hoc")
+}
+
+model QuestionBank {
+  id                    Int         @id @default(autoincrement()) @map("bo_cau_hoi_id")
+  name                  String      @db.VarChar(200) @map("ten_bo_cau_hoi")
+  description           String?     @db.Text @map("mo_ta")
+  gradeId               Int?        @map("cap_hoc_id")
+  subjectId             Int?        @map("mon_hoc_id")
+  creatorId             Int?        @map("nguoi_tao")
+  status                String      @default("CHO_DUYET") @db.VarChar(20) @map("trang_thai")
+  isPublic              Boolean     @default(false) @map("cong_khai")
+  defaultQuestionCount  Int?        @map("so_cau_mac_dinh")
+  defaultDurationMinutes Int?       @map("thoi_gian_thi_phut")
+  createdAt             DateTime    @default(now()) @map("ngay_tao")
+  grade                 Grade?      @relation(fields: [gradeId], references: [id])
+  subject               Subject?    @relation(fields: [subjectId], references: [id])
+  creator               User?       @relation("BankCreator", fields: [creatorId], references: [id])
+  questions             Question[]
+  exams                 Exam[]
+
+  @@index([gradeId, subjectId, status])
+  @@map("bo_cau_hoi")
+}
+
+model Question {
+  id          Int              @id @default(autoincrement()) @map("cau_hoi_id")
+  bankId      Int?             @map("bo_cau_hoi_id")
+  content     String           @db.Text @map("noi_dung")
+  difficulty  String?          @db.VarChar(20) @map("muc_do")
+  bank        QuestionBank?    @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  answers     Answer[]
+  favorites   FavoriteQuestion[]
+  examItems   ExamItem[]
+  comments    Comment[]
+
+  @@map("cau_hoi")
+}
+
+model Answer {
+  id          Int       @id @default(autoincrement()) @map("dap_an_id")
+  questionId  Int?      @map("cau_hoi_id")
+  content     String    @db.Text @map("noi_dung")
+  isCorrect   Boolean   @default(false) @map("dung")
+  question    Question? @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, isCorrect])
+  @@map("dap_an")
+}
+
+model FavoriteQuestion {
+  userId      Int      @map("nguoi_dung_id")
+  questionId  Int      @map("cau_hoi_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, questionId])
+  @@map("cau_hoi_yeu_thich")
+}
+
+model Exam {
+  id              Int       @id @default(autoincrement()) @map("bai_thi_id")
+  userId          Int?      @map("nguoi_dung_id")
+  bankId          Int?      @map("bo_cau_hoi_id")
+  totalQuestions  Int?      @map("tong_cau")
+  correctCount    Int?      @default(0) @map("so_cau_dung")
+  score           Float?    @default(0) @map("diem")
+  startedAt       DateTime? @map("thoi_gian_bat_dau")
+  submittedAt     DateTime? @map("thoi_gian_ket_thuc")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bank            QuestionBank? @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  items           ExamItem[]
+
+  @@index([userId, bankId, submittedAt])
+  @@map("bai_thi")
+}
+
+model ExamItem {
+  examId             Int       @map("bai_thi_id")
+  questionId         Int       @map("cau_hoi_id")
+  selectedAnswerId   Int?      @map("dap_an_da_chon")
+  isCorrect          Boolean?  @map("dung")
+  exam               Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question           Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([examId, questionId])
+  @@index([examId, questionId])
+  @@map("chi_tiet_bai_thi")
+}
+
+model Comment {
+  id          Int       @id @default(autoincrement()) @map("binh_luan_id")
+  content     String    @db.Text @map("noi_dung")
+  userId      Int       @map("nguoi_dung_id")
+  questionId  Int       @map("cau_hoi_id")
+  createdAt   DateTime  @default(now()) @map("ngay_tao")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question    Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("binh_luan")
+}
+
+model Badge {
+  id          String      @id @db.VarChar(50) @map("huy_hieu_id") // e.g. "NIGHT_OWL", "MASTER"
+  name        String      @db.VarChar(100) @map("ten_huy_hieu")
+  description String      @db.Text @map("mo_ta")
+  iconURL     String?     @db.VarChar(255) @map("icon_url")
+  userBadges  UserBadge[]
+
+  @@map("huy_hieu")
+}
+
+model UserBadge {
+  userId      Int      @map("nguoi_dung_id")
+  badgeId     String   @db.VarChar(50) @map("huy_hieu_id")
+  earnedAt    DateTime @default(now()) @map("ngay_dat")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@index([userId])
+  @@map("huy_hieu_nguoi_dung")
+}

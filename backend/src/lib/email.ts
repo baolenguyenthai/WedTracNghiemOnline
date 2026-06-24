@@ -1,0 +1,34 @@
+import nodemailer from "nodemailer";
+import { env } from "../config/env.js";
+
+function hasSmtpConfig() {
+  return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.SMTP_FROM);
+}
+
+export async function sendOtpEmail(targetEmail: string, otp: string) {
+  if (!hasSmtpConfig()) {
+    if (env.NODE_ENV !== "production") {
+      return { mode: "dev", otp };
+    }
+    throw new Error("Thiếu cấu hình SMTP. Hãy đặt SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS và SMTP_FROM.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE ?? env.SMTP_PORT === 465,
+    auth: {
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS
+    }
+  });
+
+  await transporter.sendMail({
+    from: env.SMTP_FROM,
+    to: targetEmail,
+    subject: "OTP đặt lại mật khẩu",
+    text: `Mã OTP của bạn là: ${otp}\n\nKhông chia sẻ mã này với người khác.`
+  });
+
+  return { mode: "smtp", otp: null };
+}

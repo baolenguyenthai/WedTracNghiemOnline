@@ -1,0 +1,334 @@
+import { Router } from "express";
+import multer from "multer";
+import { Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
+import { AppError, asyncHandler, ok } from "../lib/http.js";
+import { aiGenerateSchema, bankCreateSchema, bankQuerySchema, importBankSchema } from "../lib/validators.js";
+import { requireAuth } from "../middleware/auth.js";
+import { parseImportedQuestions } from "../lib/import-export.js";
+import { generateQuestionsWithGemini } from "../lib/ai.js";
+import { mapDifficulty } from "../lib/utils.js";
+
+export const banksRouter = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+banksRouter.get(
+  "/",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const filters = bankQuerySchema.parse(req.query);
+    const where: Prisma.QuestionBankWhereInput = {};
+
+    if (filters.search) {
+      where.OR = [
+        { name: { contains: filters.search } },
+        { description: { contains: filters.search } },
+        { subject: { name: { contains: filters.search } } }
+      ];
+    }
+    if (filters.subjectId) {
+      where.subjectId = filters.subjectId;
+    }
+    if (filters.gradeId) {
+      where.gradeId = filters.gradeId;
+    }
+    if (filters.mine) {
+      where.creatorId = req.user!.id;
+    }
+    if (req.user!.role !== "ADMIN") {
+      where.status = "DA_DUYET";
+    } else if (filters.status) {
+      where.status = filters.status;
+    }
+    if (typeof filters.isPublic === "boolean") {
+      where.isPublic = filters.isPublic;
+    }
+
+    const banks = await prisma.questionBank.findMany({
+      where,
+      include: {
+        grade: true,
+        subject: true,
+        creator: {
+          select: { id: true, fullName: true, username: true, email: true }
+        },
+        _count: {
+          select: { questions: true }
+        }
+      },
+      orderBy: [
+        { createdAt: "desc" },
+        { id: "desc" }
+      ]
+    });
+
+    res.json(ok({ banks }));
+  })
+);
+
+banksRouter.get(
+  "/:id",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    const bank = await prisma.questionBank.findUnique({
+      where: { id },
+      include: {
+        grade: true,
+        subject: true,
+        creator: {
+          select: { id: true, fullName: true, username: true }
+        },
+        _count: {
+          select: { questions: true }
+        }
+      }
+    });
+    if (!bank) {
+      res.status(404).json({ success: false, message: "Không tìm thấy bộ câu hỏi." });
+      return;
+    }
+
+    if (bank.status !== "DA_DUYET" && req.user!.role !== "ADMIN" && bank.creatorId !== req.user!.id) {
+      res.status(403).json({ success: false, message: "Bộ câu hỏi chưa được duyệt." });
+      return;
+    }
+
+    res.json(ok({ bank }));
+  })
+);
+
+banksRouter.get(
+  "/:id/preview",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    const bank = await prisma.questionBank.findUnique({
+      where: { id },
+      include: {
+        questions: {
+          include: {
+            answers: true
+          }
+        }
+      }
+    });
+
+    if (!bank) {
+      res.status(404).json({ success: false, message: "Không tìm thấy bộ câu hỏi." });
+      return;
+    }
+
+    if (bank.status !== "DA_DUYET" && req.user!.role !== "ADMIN" && bank.creatorId !== req.user!.id) {
+      res.status(403).json({ success: false, message: "Bộ câu hỏi chưa được duyệt." });
+      return;
+    }
+
+    const questionCount = req.query.questionCount ? Number(req.query.questionCount) : 50;
+    const shuffleQuestions = req.query.shuffleQuestions !== "false";
+    const shuffleAnswers = req.query.shuffleAnswers !== "false";
+
+    let finalQuestions = [...bank.questions];
+    
+    if (shuffleQuestions) {
+      finalQuestions.sort(() => 0.5 - Math.random());
+    }
+    
+    finalQuestions = finalQuestions.slice(0, questionCount);
+
+    if (shuffleAnswers) {
+      finalQuestions = finalQuestions.map(q => ({
+        ...q,
+        answers: [...q.answers].sort(() => 0.5 - Math.random())
+      }));
+    }
+
+    res.json(ok({ bank, questions: finalQuestions }));
+  })
+);
+
+banksRouter.post(
+  "/",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const data = bankCreateSchema.parse(req.body);
+    const bank = await prisma.questionBank.create({
+      data: {
+        name: data.name,
+        description: data.description || null,
+        gradeId: data.gradeId,
+        subjectId: data.subjectId,
+        creatorId: req.user!.id,
+        status: data.status || "CHO_DUYET",
+        isPublic: data.isPublic,
+        defaultQuestionCount: data.defaultQuestionCount ?? null,
+        defaultDurationMinutes: data.defaultDurationMinutes ?? null
+      }
+    });
+    res.json(ok({ bank }, "Tạo bộ câu hỏi thành công."));
+  })
+);
+
+banksRouter.post(
+  "/upload",
+  requireAuth,
+  upload.single("file"),
+  asyncHandler(async (req, res) => {
+    const meta = importBankSchema.parse(req.body);
+    
+    let finalSubjectId = meta.subjectId;
+    if (!finalSubjectId && meta.subjectName) {
+      let sub = await prisma.subject.findFirst({ where: { name: meta.subjectName } });
+      if (!sub) {
+        sub = await prisma.subject.create({ data: { name: meta.subjectName } });
+      }
+      finalSubjectId = sub.id;
+    }
+    if (!finalSubjectId) throw new AppError(400, "Vui lòng nhập tên môn học.");
+
+    if (!req.file) {
+      throw new AppError(400, "Vui lòng chọn file.");
+    }
+
+    const questions = await parseImportedQuestions(req.file);
+    if (!questions.length) {
+      throw new AppError(400, "File không chứa câu hỏi hợp lệ.");
+    }
+
+    const bank = await prisma.$transaction(async (tx) => {
+      const createdBank = await tx.questionBank.create({
+        data: {
+          name: meta.bankName,
+          description: meta.description || "Bộ câu hỏi tải lên từ file",
+          gradeId: meta.gradeId,
+          subjectId: finalSubjectId,
+          creatorId: req.user!.id,
+          status: "CHO_DUYET",
+          isPublic: meta.isPublic,
+          defaultQuestionCount: meta.defaultQuestionCount ?? questions.length,
+          defaultDurationMinutes: meta.defaultDurationMinutes ?? 20,
+          questions: {
+            create: questions.map((question) => ({
+              content: question.content,
+              difficulty: mapDifficulty(question.difficulty),
+              answers: {
+                create: question.answers.map((answer) => ({
+                  content: answer.content,
+                  isCorrect: answer.isCorrect
+                }))
+              }
+            }))
+          }
+        }
+      });
+
+      return createdBank;
+    });
+
+    res.json(
+      ok(
+        {
+          bank,
+          questionCount: questions.length
+        },
+        "Đã tải lên bộ câu hỏi và gửi duyệt."
+      )
+    );
+  })
+);
+
+banksRouter.post(
+  "/ai",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const data = aiGenerateSchema.parse(req.body);
+    
+    let finalSubjectId = data.subjectId;
+    if (!finalSubjectId && data.subjectName) {
+      let sub = await prisma.subject.findFirst({ where: { name: data.subjectName } });
+      if (!sub) {
+        sub = await prisma.subject.create({ data: { name: data.subjectName } });
+      }
+      finalSubjectId = sub.id;
+    }
+    if (!finalSubjectId) throw new AppError(400, "Vui lòng nhập tên môn học.");
+
+    const [grade, subject] = await Promise.all([
+      prisma.grade.findUnique({ where: { id: data.gradeId } }),
+      prisma.subject.findUnique({ where: { id: finalSubjectId } })
+    ]);
+    if (!grade || !subject) {
+      throw new AppError(404, "Không tìm thấy cấp học hoặc môn học.");
+    }
+
+    const generatedQuestions = await generateQuestionsWithGemini(
+      `${data.prompt}\n\nCấp học: ${grade.name}\nMôn học: ${subject.name}\nSố câu hỏi: ${data.questionCount}`
+    );
+
+    const preparedQuestions = generatedQuestions.slice(0, data.questionCount).map((question) => ({
+      content: question.content,
+      difficulty: mapDifficulty(question.difficulty),
+      answers: question.answers.slice(0, 4).map((answer) => ({
+        content: answer.content,
+        isCorrect: Boolean(answer.isCorrect)
+      }))
+    }));
+
+    if (!preparedQuestions.length) {
+      throw new AppError(400, "AI không tạo được câu hỏi hợp lệ.");
+    }
+    if (
+      preparedQuestions.some(
+        (question) =>
+          question.answers.length !== 4 ||
+          question.answers.some((answer) => !answer.content.trim()) ||
+          question.answers.filter((answer) => answer.isCorrect).length !== 1
+      )
+    ) {
+      throw new AppError(400, "AI phải tạo đúng 4 đáp án và 1 đáp án đúng cho mỗi câu.");
+    }
+
+    const bank = await prisma.$transaction(async (tx) => {
+      const createdBank = await tx.questionBank.create({
+        data: {
+          name: data.bankName,
+          description: data.description || "Bộ câu hỏi tạo bằng AI",
+          gradeId: data.gradeId,
+          subjectId: finalSubjectId,
+          creatorId: req.user!.id,
+          status: "CHO_DUYET",
+          isPublic: data.isPublic,
+          defaultQuestionCount: preparedQuestions.length,
+          defaultDurationMinutes: 20,
+          questions: {
+            create: preparedQuestions.map((question) => ({
+              content: question.content,
+              difficulty: question.difficulty,
+              answers: {
+                create: question.answers.map((answer) => ({
+                  content: answer.content,
+                  isCorrect: answer.isCorrect
+                }))
+              }
+            }))
+          }
+        }
+      });
+
+      return createdBank;
+    });
+
+    res.json(
+      ok(
+        {
+          bank,
+          questionCount: preparedQuestions.length
+        },
+        "Đã tạo bộ câu hỏi bằng AI và gửi duyệt."
+      )
+    );
+  })
+);
