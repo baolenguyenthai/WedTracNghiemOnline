@@ -159,7 +159,6 @@ export const userNavItems: NavItem[] = [
   { key: "history", label: "Lịch sử", icon: <Clock3 size={16} /> },
   { key: "favorites", label: "Yêu thích", icon: <Heart size={16} /> },
   { key: "leaderboard", label: "Xếp hạng", icon: <Medal size={16} /> },
-  { key: "upload", label: "Tải lên / AI", icon: <Upload size={16} /> },
   { key: "profile", label: "Hồ sơ", icon: <CircleUserRound size={16} /> }
 ];
 

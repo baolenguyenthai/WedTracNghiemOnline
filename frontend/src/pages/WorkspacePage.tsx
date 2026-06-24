@@ -245,7 +245,6 @@ export function WorkspacePage() {
                 <LeaderboardSection token={token} catalog={catalog} />
               </>
             ) : null}
-            {activeSection === "upload" ? <UploadSection token={token} catalog={catalog} /> : null}
             {activeSection === "profile" ? <ProfileSection token={token} onProfileUpdated={setUser} /> : null}
           </div>
         );

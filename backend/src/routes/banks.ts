@@ -178,6 +178,9 @@ banksRouter.post(
   requireAuth,
   upload.single("file"),
   asyncHandler(async (req, res) => {
+    if (req.user!.role !== "ADMIN") {
+      throw new AppError(403, "Chỉ Quản trị viên mới được sử dụng tính năng này.");
+    }
     if (!req.file) {
       throw new AppError(400, "Vui lòng chọn file.");
     }
@@ -194,6 +197,9 @@ banksRouter.post(
   requireAuth,
   upload.single("file"),
   asyncHandler(async (req, res) => {
+    if (req.user!.role !== "ADMIN") {
+      throw new AppError(403, "Chỉ Quản trị viên mới được sử dụng tính năng này.");
+    }
     if (!req.file) {
       throw new AppError(400, "Vui lòng chọn ảnh để quét.");
     }
@@ -259,6 +265,9 @@ banksRouter.post(
   "/create-from-parsed",
   requireAuth,
   asyncHandler(async (req, res) => {
+    if (req.user!.role !== "ADMIN") {
+      throw new AppError(403, "Chỉ Quản trị viên mới được sử dụng tính năng này.");
+    }
     const data = createParsedSchema.parse(req.body);
 
     let finalSubjectId = data.subjectId;
@@ -308,6 +317,9 @@ banksRouter.post(
   "/ai",
   requireAuth,
   asyncHandler(async (req, res) => {
+    if (req.user!.role !== "ADMIN") {
+      throw new AppError(403, "Chỉ Quản trị viên mới được sử dụng tính năng này.");
+    }
     const data = aiGenerateSchema.parse(req.body);
     
     let finalSubjectId = data.subjectId;
