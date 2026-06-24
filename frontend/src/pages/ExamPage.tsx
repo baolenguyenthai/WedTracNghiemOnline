@@ -312,7 +312,7 @@ export function ExamPage() {
               <span>Về lịch sử</span>
             </Button>
             <Section title="Kết quả" subtitle={bank?.name || ""}>
-              <div className="stack" style={{ gap: "0.75rem" }}>
+              <div className="stack gap-md">
                 {/* Score circle */}
                 <div style={{ position: "relative", width: 100, height: 100, margin: "0.5rem auto" }}>
                   <svg width="100" height="100" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
@@ -380,7 +380,7 @@ export function ExamPage() {
             <span>Về workspace</span>
           </Button>
           <Section title={bank?.name || "Bài thi"} subtitle={`${bank?.grade?.name || ""} · ${bank?.subject?.name || ""}`}>
-            <div className="stack" style={{ gap: "0.75rem" }}>
+            <div className="stack gap-md">
               <div className="toolbar">
                 <Badge tone={bank?.isPublic ? "success" : "warning"}>{bank?.isPublic ? "Công khai" : "Cài sẵn"}</Badge>
                 <Badge tone="neutral">{bank?._count?.questions || 0} câu</Badge>
@@ -406,7 +406,7 @@ export function ExamPage() {
                   )}
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 600 }}>Tiến trình: {progress}%</div>
-                    <div className="progress-bar" style={{ marginTop: "0.5rem" }}>
+                    <div className="progress-bar mt-sm">
                       <span style={{ width: `${progress}%` }} />
                     </div>
                   </div>
@@ -475,7 +475,7 @@ export function ExamPage() {
             <EmptyState title="Sẵn sàng bắt đầu" description="Sau khi khởi tạo, bạn sẽ thấy câu hỏi, bộ đếm thời gian và điều hướng từng câu." />
           ) : currentQuestion ? (
             <div className="stack">
-              <div className="toolbar" style={{ justifyContent: "space-between" }}>
+              <div className="toolbar justify-between">
                 <Badge tone="primary">{currentQuestion.difficulty}</Badge>
                 <Button variant="ghost" size="sm" onClick={toggleSpeak} style={{ color: isSpeaking ? "var(--primary)" : "var(--text-secondary)" }}>
                   {isSpeaking ? <Square size={14} fill="currentColor" /> : <Volume2 size={14} />}
@@ -484,7 +484,7 @@ export function ExamPage() {
               </div>
               <div className="question-card" style={{ border: "none", padding: 0, background: "transparent" }}>
                 <h4 style={{ fontSize: "1rem", lineHeight: 1.6 }}>{currentQuestion.content}</h4>
-                <div className="question-options" style={{ gap: "0.5rem" }}>
+                <div className="question-options gap-sm">
                   {currentQuestion.answers.map((answer, idx) => {
                     const active = selectedAnswerId === answer.id;
                     const isReview = isReviewMode && selectedAnswerId !== null;
@@ -523,7 +523,7 @@ export function ExamPage() {
                   })}
                 </div>
               </div>
-              <div className="toolbar" style={{ justifyContent: "space-between" }}>
+              <div className="toolbar justify-between">
                 <div className="toolbar">
                   <Button variant="secondary" size="sm" onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))} disabled={currentIndex === 0 || isSurvivalMode}>
                     <ChevronLeft size={15} />
@@ -544,7 +544,7 @@ export function ExamPage() {
         </Section>
 
         {session ? (
-          <div className="panel" style={{ marginTop: "1rem" }}>
+          <div className="panel mt-lg">
             <div className="panel-head">
               <div>
                 <h2>Điều hướng</h2>

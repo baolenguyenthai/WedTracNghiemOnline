@@ -347,10 +347,10 @@ function ExploreSection({
       <div className="list scrollable-list">
         {banks.map((bank) => (
           <div key={bank.id} className="row-card">
-            <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="flex-1 min-w-0">
               <h3>{bank.subject?.name || "Bộ đề"}</h3>
-              <p style={{ marginBottom: "0.5rem" }}>{bank.name}</p>
-              <div className="toolbar" style={{ gap: "0.35rem" }}>
+              <p className="mb-sm">{bank.name}</p>
+              <div className="toolbar gap-sm">
                 <Badge tone={bank.isPublic ? "success" : "warning"}>{bank.isPublic ? "Công khai" : "Cài sẵn"}</Badge>
                 <Badge tone={statusTone(bank.status)}>{statusLabel(bank.status)}</Badge>
                 <Badge tone="neutral">{bank.grade?.name}</Badge>
@@ -451,10 +451,10 @@ function HistorySection({ token }: { token: string | null }) {
                   background: selected === exam.id ? "var(--primary-muted)" : undefined
                 }}
               >
-                <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="flex-1 min-w-0">
                   <h3 style={{ wordBreak: "break-word" }}>{exam.subjectName}</h3>
                   <p style={{ wordBreak: "break-word", marginTop: "0.25rem" }}>{exam.bankName}</p>
-                  <div className="toolbar" style={{ marginTop: "0.4rem", gap: "0.3rem" }}>
+                  <div className="toolbar mt-sm gap-xs">
                     <Badge tone={exam.submittedAt ? "success" : "warning"}>{exam.submittedAt ? "Đã nộp" : "Đang thi"}</Badge>
                     <Badge tone="neutral">{Math.round(exam.score)} đ</Badge>
                     <Badge tone="neutral">{exam.correctCount}/{exam.totalQuestions}</Badge>
@@ -473,7 +473,7 @@ function HistorySection({ token }: { token: string | null }) {
         {detailLoading ? <LoadingState /> : null}
         {!detailLoading && detail ? (
           <div className="stack">
-            <div className="toolbar" style={{ gap: "0.35rem" }}>
+            <div className="toolbar gap-sm">
               <Badge tone="primary">{detail.subjectName}</Badge>
               <Badge tone="neutral">{detail.gradeName}</Badge>
               <Badge tone="success">{detail.score.toFixed(1)} điểm</Badge>
@@ -562,7 +562,7 @@ function FavoritesSection({
         </Button>
       }
     >
-      <div className="toolbar" style={{ marginBottom: "0.75rem", gap: "0.5rem" }}>
+      <div className="toolbar mb-md gap-sm">
         <Select
           value={filters.gradeId}
           onChange={(event) => setFilters((value) => ({ ...value, gradeId: event.target.value }))}
@@ -591,8 +591,8 @@ function FavoritesSection({
       <div className="question-list scrollable-list">
         {favorites.map((item) => (
           <div key={item.questionId} className="question-card">
-            <div className="toolbar" style={{ justifyContent: "space-between" }}>
-              <div className="toolbar" style={{ gap: "0.3rem" }}>
+            <div className="toolbar justify-between">
+              <div className="toolbar gap-xs">
                 <Badge tone="primary">{item.subjectName}</Badge>
                 <Badge tone="neutral">{item.gradeName}</Badge>
                 <Badge tone={item.isPublic ? "success" : "warning"}>{item.isPublic ? "Công khai" : "Riêng tư"}</Badge>
@@ -669,7 +669,7 @@ function LeaderboardSection({
         </Button>
       }
     >
-      <div className="toolbar" style={{ marginBottom: "0.75rem", gap: "0.5rem" }}>
+      <div className="toolbar mb-md gap-sm">
         <Select
           value={filters.gradeId}
           onChange={(event) => setFilters((value) => ({ ...value, gradeId: event.target.value }))}
@@ -863,7 +863,7 @@ function UploadSection({
 
   return (
     <Section title="Tải lên / Tạo bằng AI" subtitle="Nhập file hoặc nhờ AI tạo bộ câu hỏi.">
-      <div className="tab-list" style={{ marginBottom: "1rem" }}>
+      <div className="tab-list mb-lg">
         <button type="button" className={`tab-button ${mode === "file" ? "tab-button-active" : ""}`} onClick={() => setMode("file")}>
           <FileUp size={14} style={{ marginRight: "0.35rem" }} />
           Tải file
@@ -949,7 +949,7 @@ function UploadSection({
             {error ? <div className="form-error">{error}</div> : null}
             {message ? <div className="form-success">{message}</div> : null}
             
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div className="flex gap-sm">
               <Button type="button" variant="outline" onClick={() => setParsedQuestions(null)}>
                 Hủy và tải file khác
               </Button>
@@ -1003,11 +1003,11 @@ function UploadSection({
 
       {generatedBank ? (
         <Subsection title="Kết quả tạo bộ đề" subtitle="Danh sách câu hỏi và đáp án đã được tạo.">
-          <div style={{ marginBottom: "1rem" }}>
+          <div className="mb-lg">
             <strong>{generatedBank.name}</strong>
             <p style={{ margin: 0, opacity: 0.8, fontSize: "0.9rem" }}>{generatedBank.description}</p>
           </div>
-          <div className="stack" style={{ gap: "1rem" }}>
+          <div className="stack gap-lg">
             {generatedBank.questions?.map((q: any, i: number) => (
               <div key={q.id || i} className="card stack" style={{ padding: "1.25rem", gap: "0.75rem", borderLeft: "4px solid var(--primary)" }}>
                 <h4 style={{ margin: 0, fontSize: "1rem", lineHeight: 1.5 }}>
@@ -1172,8 +1172,8 @@ function ProfileSection({
           </Button>
         </form>
       </div>
-      {error ? <div className="form-error" style={{ marginTop: "1rem" }}>{error}</div> : null}
-      {message ? <div className="form-success" style={{ marginTop: "1rem" }}>{message}</div> : null}
+      {error ? <div className="form-error mt-lg">{error}</div> : null}
+      {message ? <div className="form-success mt-lg">{message}</div> : null}
     </Section>
   );
 }
@@ -1426,7 +1426,7 @@ function AdminUsersSection({
                   <Badge tone={user.status === "ACTIVE" ? "success" : "danger"}>{user.status}</Badge>
                 </td>
                 <td>
-                  <div className="toolbar" style={{ gap: "0.3rem" }}>
+                  <div className="toolbar gap-xs">
                     <Button variant="secondary" size="sm" onClick={() => edit(user)}><Edit3 size={13} /></Button>
                     <Button variant="danger" size="sm" onClick={() => remove(user.id)}><Trash2 size={13} /></Button>
                   </div>
@@ -1523,7 +1523,7 @@ function AdminCatalogSection({
           </div>
         </Subsection>
       </div>
-      {message ? <div className="form-success" style={{ marginTop: "1rem" }}>{message}</div> : null}
+      {message ? <div className="form-success mt-lg">{message}</div> : null}
     </Section>
   );
 }
@@ -1817,7 +1817,7 @@ function AdminBanksSection({
             <Button type="submit" variant="secondary" size="sm"><Search size={13} /></Button>
           </form>
           {loading ? <LoadingState /> : null}
-          <div className="list scrollable-list" style={{ marginTop: "0.5rem" }}>
+          <div className="list scrollable-list mt-sm">
             {banks.map((bank) => (
               <button
                 key={bank.id}
@@ -1830,7 +1830,7 @@ function AdminBanksSection({
                   background: selectedBank?.id === bank.id ? "var(--primary-muted)" : undefined
                 }}
               >
-                <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="flex-1 min-w-0">
                   <h3 style={{ wordBreak: "break-word", fontWeight: 800 }}>{bank.subject?.name || "Bộ đề"}</h3>
                   <p style={{ wordBreak: "break-word", marginTop: "0.25rem", color: "var(--text-secondary)" }}>{bank.name}</p>
                   <div className="toolbar" style={{ marginTop: "0.5rem", gap: "0.25rem" }}>
@@ -1920,7 +1920,7 @@ function AdminBanksSection({
                 <label className="field-group"><span>Số câu mặc định</span><Input value={selectedBank.defaultQuestionCount ?? ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, defaultQuestionCount: Number(event.target.value) || null }) : value)} /></label>
                 <label className="field-group"><span>Thời gian mặc định</span><Input value={selectedBank.defaultDurationMinutes ?? ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, defaultDurationMinutes: Number(event.target.value) || null }) : value)} /></label>
               </div>
-              <div className="toolbar" style={{ gap: "0.35rem" }}>
+              <div className="toolbar gap-sm">
                 <Button variant="secondary" size="sm" onClick={() => void downloadFile(token, `/admin/banks/${selectedBank.id}/export/docx`, `${selectedBank.name}.docx`)}>
                   <FileDown size={13} />
                   <span>Word</span>
@@ -1949,7 +1949,7 @@ function AdminBanksSection({
               <div className="question-list scrollable-list">
                 {questions.map((question, index) => (
                   <div key={question.id} className="question-card">
-                    <div className="toolbar" style={{ justifyContent: "space-between" }}>
+                    <div className="toolbar justify-between">
                       <div className="toolbar" style={{ gap: "0.25rem" }}>
                         <Badge tone="primary">Câu {index + 1}</Badge>
                         <Badge tone="neutral">{question.difficulty}</Badge>
@@ -2229,7 +2229,7 @@ function AdminExamsSection({ token }: { token: string | null }) {
             <button onClick={() => setDetail(null)} style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
 
             {/* Header */}
-            <div style={{ marginBottom: "1rem" }}>
+            <div className="mb-lg">
               <h3 style={{ margin: 0 }}>Chi tiết bài thi #{detail.id}</h3>
               <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                 <span>👤 <strong>{detail.userName}</strong> (@{detail.username})</span>
@@ -2246,7 +2246,7 @@ function AdminExamsSection({ token }: { token: string | null }) {
             <div className="stack" style={{ gap: "0.75rem", maxHeight: "65vh", overflowY: "auto", paddingRight: "0.25rem" }}>
               {detail.items.map(item => (
                 <div key={item.questionId} className="question-card" style={{ padding: "1rem" }}>
-                  <div className="toolbar" style={{ marginBottom: "0.5rem" }}>
+                  <div className="toolbar mb-sm">
                     <Badge tone={item.isCorrect ? "success" : "danger"}>{item.isCorrect ? "✓ Đúng" : "✗ Sai"}</Badge>
                     <Badge tone="neutral">Câu {item.index}</Badge>
                   </div>

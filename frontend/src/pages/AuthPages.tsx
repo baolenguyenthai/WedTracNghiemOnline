@@ -445,7 +445,7 @@ export function LoginPage() {
         </label>
         <label>
           <span>Mật khẩu</span>
-          <div style={{ position: "relative" }}>
+          <div className="relative">
             <Input
               type={showPassword ? "text" : "password"}
               value={password}
@@ -456,27 +456,17 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: "absolute",
-                right: "0.65rem",
-                top: "50%",
-                transform: "translateY(-50%)",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--text-tertiary)",
-                display: "flex",
-                padding: "0.25rem"
-              }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--text-tertiary)] bg-transparent border-none cursor-pointer flex"
+              style={{ top: "50%", transform: "translateY(-50%)" }}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
         </label>
         {error ? <div className="form-error">{error}</div> : null}
-        <div className="toolbar" style={{ gap: "0.5rem", marginTop: "0.25rem", width: "100%" }}>
-          <div style={{ flex: 1, display: "flex", width: "100%" }}>
-            <Button type="submit" disabled={loading}>
+        <div className="toolbar gap-sm mt-sm w-full">
+          <div className="flex-1 flex w-full">
+            <Button type="submit" disabled={loading} fullWidth>
               {loading ? null : <Lock size={15} />}
               <span>{loading ? "Đang đăng nhập..." : "Đăng nhập"}</span>
             </Button>
@@ -618,7 +608,7 @@ export function ForgotPasswordPage() {
     >
       {step === "request" ? (
         <form onSubmit={requestOtp} className="auth-fields">
-          <div className="form-note" style={{ marginBottom: "0.25rem" }}>
+          <div className="form-note mb-xs">
             Bước 1/2 — Nhập email đã đăng ký
           </div>
           <label>
@@ -634,7 +624,7 @@ export function ForgotPasswordPage() {
         </form>
       ) : (
         <form onSubmit={resetPassword} className="auth-fields">
-          <div className="form-note" style={{ marginBottom: "0.25rem" }}>
+          <div className="form-note mb-xs">
             Bước 2/2 — Nhập OTP và mật khẩu mới
           </div>
           <label>

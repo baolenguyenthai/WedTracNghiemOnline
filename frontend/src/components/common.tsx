@@ -27,9 +27,18 @@ export function Button({
   disabled?: boolean;
   loading?: boolean;
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  className?: string;
+  style?: React.CSSProperties;
+  fullWidth?: boolean;
 }) {
   return (
-    <button className={`btn btn-${variant} btn-${size}`} type={type} disabled={disabled || loading} onClick={onClick}>
+    <button 
+      className={`btn btn-${variant} btn-${size} ${fullWidth ? "w-full" : ""} ${className || ""}`.trim()} 
+      type={type} 
+      disabled={disabled || loading} 
+      onClick={onClick}
+      style={style}
+    >
       {loading ? <LoaderCircle size={15} className="spin" /> : null}
       {children}
     </button>
