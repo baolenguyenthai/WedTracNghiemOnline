@@ -140,7 +140,7 @@ export function speakText(text: string, onEnd?: () => void) {
   const femaleVoice = availableVoices.find(v => v.lang.startsWith("vi") && /female|woman|girl|nữ|cô|chị/i.test(v.name));
   if (femaleVoice) utterance.voice = femaleVoice;
   // Tốc độ nhanh, giọng cao hơn để giống voice review phim
-  utterance.rate = 1.6; // nhanh hơn (1.0 = chuẩn)
+  utterance.rate = 1.3; // nhanh vừa phải
   utterance.pitch = 1.3; // giọng cao hơn
 
   
