@@ -189,6 +189,53 @@ banksRouter.post(
   })
 );
 
+banksRouter.post(
+  "/ocr",
+  requireAuth,
+  upload.single("file"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new AppError(400, "Vui lòng chọn ảnh để quét.");
+    }
+
+    const mimeType = req.file.mimetype;
+    if (!mimeType.startsWith("image/")) {
+      throw new AppError(400, "File tải lên phải là hình ảnh (JPEG, PNG, vv).");
+    }
+
+    const base64Image = req.file.buffer.toString("base64");
+    const { parseImageToQuestionsWithGemini } = await import("../lib/ai.js");
+    
+    // Convert GeneratedQuestion[] to ParsedQuestion format
+    const questions = await parseImageToQuestionsWithGemini(base64Image, mimeType);
+    
+    if (!questions.length) {
+      throw new AppError(400, "AI không nhận diện được câu hỏi nào từ ảnh.");
+    }
+
+    // Map to valid format with isValid flag
+    const formattedQuestions = questions.map(q => {
+      let isValid = true;
+      const errors = [];
+      if (q.answers.length !== 4) {
+        isValid = false;
+        errors.push("Cần đúng 4 đáp án");
+      }
+      if (q.answers.filter(a => a.isCorrect).length !== 1) {
+        isValid = false;
+        errors.push("Cần 1 đáp án đúng");
+      }
+      return {
+        ...q,
+        isValid,
+        errors
+      };
+    });
+
+    res.json(ok({ questions: formattedQuestions }, "Đã quét ảnh thành công."));
+  })
+);
+
 const createParsedSchema = z.object({
   bankName: z.string().min(1, "Tên bộ đề không được trống"),
   description: z.string().optional(),

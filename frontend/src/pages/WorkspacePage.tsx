@@ -39,7 +39,9 @@ import {
   Activity,
   Zap,
   FileText,
-  Eye
+  Eye,
+  Camera,
+  Scan
 } from "lucide-react";
 import { apiFetch, getApiBase } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
@@ -731,7 +733,7 @@ function UploadSection({
   token: string | null;
   catalog: CatalogData;
 }) {
-  const [mode, setMode] = useState<"file" | "ai">("file");
+  const [mode, setMode] = useState<"file" | "ai" | "ocr">("file");
   const [fileForm, setFileForm] = useState({
     bankName: "",
     description: "",
@@ -749,6 +751,15 @@ function UploadSection({
     isPublic: false,
     questionCount: "5",
     prompt: ""
+  });
+  const [ocrForm, setOcrForm] = useState({
+    bankName: "",
+    description: "",
+    gradeId: "",
+    subjectName: "",
+    isPublic: false,
+    defaultQuestionCount: "20",
+    defaultDurationMinutes: "20"
   });
   const [file, setFile] = useState<File | null>(null);
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[] | null>(null);
@@ -831,6 +842,41 @@ function UploadSection({
     }
   };
 
+  const submitOcr = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!token) return;
+
+    if (!file) {
+      setError("Vui lòng chụp ảnh hoặc chọn ảnh chứa đề thi.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000/api"}/banks/ocr`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+      const json = await response.json();
+      if (!response.ok || !json.success) {
+        throw new Error(json.message || "Quét ảnh thất bại.");
+      }
+      setParsedQuestions(json.data.questions);
+      setMessage(`AI đã quét được ${json.data.questions.length} câu hỏi. Vui lòng rà soát lại.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi khi kết nối với AI.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submitAi = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!token) return;
@@ -871,6 +917,10 @@ function UploadSection({
         <button type="button" className={`tab-button ${mode === "ai" ? "tab-button-active" : ""}`} onClick={() => setMode("ai")}>
           <Sparkles size={14} style={{ marginRight: "0.35rem" }} />
           Tạo bằng AI
+        </button>
+        <button type="button" className={`tab-button ${mode === "ocr" ? "tab-button-active" : ""}`} onClick={() => setMode("ocr")}>
+          <Scan size={14} style={{ marginRight: "0.35rem" }} />
+          Quét ảnh
         </button>
       </div>
 
@@ -954,6 +1004,119 @@ function UploadSection({
                 Hủy và tải file khác
               </Button>
               <Button type="button" onClick={submitParsed} disabled={loading || parsedQuestions.some(q => !q.isValid)}>
+                {loading ? <LoaderCircle size={14} className="spin" /> : <Sparkles size={14} />}
+                <span>{loading ? "Đang lưu..." : "Xác nhận tạo bộ đề"}</span>
+              </Button>
+            </div>
+          </div>
+        )
+      ) : mode === "ocr" ? (
+        !parsedQuestions ? (
+          <form className="stack" onSubmit={submitOcr}>
+            <div className="form-grid form-columns-2">
+              <label className="field-group">
+                <span>Tên bộ đề</span>
+                <Input value={ocrForm.bankName} onChange={(event) => setOcrForm((value) => ({ ...value, bankName: event.target.value }))} />
+              </label>
+              <label className="field-group">
+                <span>Mô tả</span>
+                <Input value={ocrForm.description} onChange={(event) => setOcrForm((value) => ({ ...value, description: event.target.value }))} />
+              </label>
+              <label className="field-group">
+                <span>Cấp học</span>
+                <Select value={ocrForm.gradeId} onChange={(event) => setOcrForm((value) => ({ ...value, gradeId: event.target.value }))}>
+                  <option value="">Chọn cấp học</option>
+                  {catalog.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
+                </Select>
+              </label>
+              <label className="field-group">
+                <span>Môn học</span>
+                <Input value={ocrForm.subjectName} onChange={(event) => setOcrForm((value) => ({ ...value, subjectName: event.target.value }))} placeholder="Nhập tên môn học..." />
+              </label>
+            </div>
+            <Toggle checked={ocrForm.isPublic} onChange={(checked) => setOcrForm((value) => ({ ...value, isPublic: checked }))} label="Cho phép chỉnh số câu khi làm bài" />
+            <label className="field-group">
+              <span>Chụp/Chọn ảnh chụp đề thi giấy</span>
+              {/* Note: capture="environment" will prompt camera on mobile/tablets directly */}
+              <Input type="file" accept="image/*" capture="environment" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+            </label>
+            <div className="section-note">Mẹo: Chụp rõ nét, đảm bảo đủ sáng. AI có thể nhận diện tốt cả công thức toán.</div>
+            {error ? <div className="form-error">{error}</div> : null}
+            {message ? <div className="form-success">{message}</div> : null}
+            <Button type="submit" disabled={loading}>
+              {loading ? <LoaderCircle size={14} className="spin" /> : <Camera size={14} />}
+              <span>{loading ? "Đang quét ảnh..." : "Quét ảnh với AI"}</span>
+            </Button>
+          </form>
+        ) : (
+          <div className="stack">
+            <h3>Kết quả quét AI ({parsedQuestions.length} câu)</h3>
+            <div className="section-note">Vui lòng rà soát lại các câu hỏi AI đã nhận diện. Sửa lại form nếu cần trước khi lưu.</div>
+            
+            <div className="list scrollable-list" style={{ maxHeight: 400, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 6, padding: "0.5rem" }}>
+              {parsedQuestions.map((q, index) => (
+                <div key={index} style={{ marginBottom: "1rem", paddingBottom: "1rem", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ fontWeight: 600, color: q.isValid ? "inherit" : "var(--danger)" }}>
+                    Câu {index + 1}: {q.content}
+                  </div>
+                  {!q.isValid && q.errors && (
+                    <div style={{ color: "var(--danger)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                      Lỗi: {q.errors.join(", ")}
+                    </div>
+                  )}
+                  <div style={{ marginTop: "0.5rem", paddingLeft: "1rem" }}>
+                    {q.answers.map((a, i) => (
+                      <div key={i} style={{ color: a.isCorrect ? "var(--success)" : "inherit", fontWeight: a.isCorrect ? 600 : 400 }}>
+                        {String.fromCharCode(65 + i)}. {a.content} {a.isCorrect && "(Đúng)"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {error ? <div className="form-error">{error}</div> : null}
+            {message ? <div className="form-success">{message}</div> : null}
+            
+            <div className="flex gap-sm">
+              <Button type="button" variant="outline" onClick={() => setParsedQuestions(null)}>
+                Hủy và tải ảnh khác
+              </Button>
+              <Button type="button" onClick={async () => {
+                if (!token || !parsedQuestions) return;
+                if (!ocrForm.bankName.trim() || !ocrForm.gradeId || !ocrForm.subjectName.trim()) {
+                  setError("Vui lòng điền đầy đủ Tên bộ đề, Cấp học, Môn học.");
+                  return;
+                }
+                const invalidCount = parsedQuestions.filter(q => !q.isValid).length;
+                if (invalidCount > 0) {
+                  setError(`Có ${invalidCount} câu hỏi bị lỗi. Vui lòng sửa file ảnh/chụp lại.`);
+                  return;
+                }
+                setLoading(true);
+                setError(null);
+                setMessage(null);
+                try {
+                  const response = await apiFetch<{ bank: BankSummary; questionCount: number }>("/banks/create-from-parsed", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      ...ocrForm,
+                      gradeId: Number(ocrForm.gradeId),
+                      defaultQuestionCount: ocrForm.defaultQuestionCount ? Number(ocrForm.defaultQuestionCount) : undefined,
+                      defaultDurationMinutes: ocrForm.defaultDurationMinutes ? Number(ocrForm.defaultDurationMinutes) : undefined,
+                      questions: parsedQuestions
+                    })
+                  }, token);
+                  setMessage(`Đã lưu ${response.data.questionCount} câu hỏi thành công.`);
+                  setGeneratedBank(response.data.bank);
+                  setParsedQuestions(null);
+                  setFile(null);
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Không thể tạo bộ đề.");
+                } finally {
+                  setLoading(false);
+                }
+              }} disabled={loading || parsedQuestions.some(q => !q.isValid)}>
                 {loading ? <LoaderCircle size={14} className="spin" /> : <Sparkles size={14} />}
                 <span>{loading ? "Đang lưu..." : "Xác nhận tạo bộ đề"}</span>
               </Button>

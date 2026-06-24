@@ -213,3 +213,85 @@ export async function generateInsightReportWithGemini(statsData: string): Promis
 
   throw lastError || new Error("Không thể gọi API Gemini.");
 }
+
+export async function parseImageToQuestionsWithGemini(imageBase64: string, mimeType: string, prompt?: string): Promise<GeneratedQuestion[]> {
+  if (!env.GEMINI_API_KEYS) {
+    throw new Error("Thiếu GEMINI_API_KEYS.");
+  }
+
+  const apiKeys = env.GEMINI_API_KEYS.split(",").map((k) => k.trim()).filter(Boolean);
+  if (!apiKeys.length) {
+    throw new Error("Không tìm thấy cấu hình API keys hợp lệ.");
+  }
+
+  const defaultPrompt = 
+    "Hãy đọc hình ảnh đề thi trắc nghiệm này và trích xuất tất cả các câu hỏi cùng với đáp án. " +
+    "Trả về DUY NHẤT một JSON array, mỗi phần tử có dạng {" +
+    "\"content\": string, \"difficulty\": \"DE\" | \"TB\" | \"KHO\", " +
+    "\"answers\": [{\"content\": string, \"isCorrect\": boolean}, ...]}. " +
+    "Nếu đề thi không chỉ rõ đáp án nào đúng, hãy tự suy luận đáp án đúng nhất và đánh dấu `isCorrect`: true. Mỗi câu hỏi cần 4 đáp án và 1 đáp án đúng duy nhất. " +
+    "Loại bỏ các thành phần rác như tiêu đề đề thi, số trang, mã đề. " +
+    "Đảm bảo giữ nguyên các công thức, ký hiệu toán học/hóa học nếu có.";
+
+  const finalPrompt = prompt ? `${defaultPrompt}\n\nYêu cầu bổ sung: ${prompt}` : defaultPrompt;
+
+  const requestBody = {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: finalPrompt },
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: imageBase64
+            }
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: "application/json"
+    }
+  };
+
+  let lastError: Error | null = null;
+  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash"]));
+
+  for (const apiKey of apiKeys) {
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestBody)
+          }
+        );
+
+        const payload = (await response.json()) as any;
+
+        if (!response.ok) {
+          throw new Error(payload.error?.message || `Gemini trả về HTTP ${response.status}.`);
+        }
+
+        const text = payload.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const parsed = JSON.parse(extractJsonArray(text)) as unknown;
+        if (!Array.isArray(parsed)) {
+          throw new Error("AI trả về dữ liệu không hợp lệ.");
+        }
+
+        return parsed as GeneratedQuestion[];
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error(`Lỗi OCR với key ${apiKey.substring(0, 8)}... model ${model}:`, lastError.message);
+      }
+    }
+  }
+
+  throw lastError || new Error("Không thể gọi API Gemini đọc ảnh.");
+}
