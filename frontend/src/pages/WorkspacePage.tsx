@@ -354,12 +354,12 @@ function ExploreSection({
               </div>
             </div>
             <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/flashcard/${bank.id}`)} style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
-                <span style={{ fontSize: "0.9rem", marginRight: "0.25rem" }}>🃏</span>
+              <Button size="sm" variant="outline" className="mobile-small-btn" onClick={() => navigate(`/flashcard/${bank.id}`)}>
+                <span className="mobile-small-icon">🃏</span>
                 <span>Flashcard</span>
               </Button>
-              <Button size="sm" onClick={() => navigate(`/exam/${bank.id}`)} style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
-                <Play size={12} style={{ marginRight: "0.25rem" }} />
+              <Button size="sm" className="mobile-small-btn" onClick={() => navigate(`/exam/${bank.id}`)}>
+                <Play className="mobile-small-lucide" size={14} />
                 <span>Làm bài</span>
               </Button>
             </div>

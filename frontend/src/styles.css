@@ -1160,6 +1160,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .data-table th,
   .data-table td { padding: 0.5rem; }
   .data-table td { font-size: 0.8rem; }
+  
+  .mobile-small-btn {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+  .mobile-small-icon {
+    font-size: 0.9rem !important;
+    margin-right: 0.25rem;
+  }
+  .mobile-small-lucide {
+    width: 14px;
+    height: 14px;
+    margin-right: 0.25rem;
+  }
 }
 
 /* =========================================
