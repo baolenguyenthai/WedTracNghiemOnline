@@ -73,7 +73,7 @@ export function GamificationSection({ token }: GamificationSectionProps) {
                       #{i + 1}
                     </td>
                     <td>{u.fullName}</td>
-                    <td style={{ textAlign: "right", fontWeight: "bold", color: "var(--primary)" }}>{u.totalScore}</td>
+                    <td style={{ textAlign: "right", fontWeight: "bold", color: "var(--primary)" }}>{Math.round(u.totalScore)}</td>
                     <td style={{ textAlign: "right", opacity: 0.7 }}>{u.examCount}</td>
                   </tr>
                 ))}

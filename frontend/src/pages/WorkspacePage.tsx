@@ -439,7 +439,7 @@ function HistorySection({ token }: { token: string | null }) {
                   <p style={{ wordBreak: "break-word", marginTop: "0.25rem" }}>{exam.bankName}</p>
                   <div className="toolbar" style={{ marginTop: "0.4rem", gap: "0.3rem" }}>
                     <Badge tone={exam.submittedAt ? "success" : "warning"}>{exam.submittedAt ? "Đã nộp" : "Đang thi"}</Badge>
-                    <Badge tone="neutral">{exam.score.toFixed(1)} đ</Badge>
+                    <Badge tone="neutral">{Math.round(exam.score)} đ</Badge>
                     <Badge tone="neutral">{exam.correctCount}/{exam.totalQuestions}</Badge>
                   </div>
                 </div>
@@ -692,7 +692,7 @@ function LeaderboardSection({
               </td>
               <td>{row.subjectName}</td>
               <td>{row.gradeName}</td>
-              <td><strong style={{ color: "var(--primary-hover)" }}>{row.score.toFixed(1)}</strong></td>
+              <td><strong style={{ color: "var(--primary-hover)" }}>{Math.round(row.score)}<span style={{ fontSize: "0.7em", opacity: 0.6 }}>/10</span></strong></td>
               <td>{row.correctCount}/{row.totalQuestions}</td>
               <td>{formatDuration(row.durationSeconds)}</td>
             </tr>
@@ -1155,7 +1155,7 @@ function AdminOverviewSection({ token }: { token: string | null }) {
                       <p style={{ wordBreak: "break-word", marginTop: "0.25rem" }}>{exam.userName}</p>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <strong style={{ color: "var(--primary-hover)" }}>{exam.score.toFixed(1)}</strong>
+                      <strong style={{ color: "var(--primary-hover)" }}>{Math.round(exam.score)}/10</strong>
                       <div className="section-note">{formatDateTime(exam.submittedAt)}</div>
                     </div>
                   </div>

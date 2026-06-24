@@ -296,8 +296,8 @@ export function ExamPage() {
 
   // Result view
   if (result) {
-    const scorePercent = result.exam.totalQuestions > 0 ? (result.exam.correctCount / result.exam.totalQuestions) * 100 : 0;
-    const scoreColor = scorePercent >= 80 ? "var(--success)" : scorePercent >= 50 ? "var(--warning)" : "var(--danger)";
+    const scorePercent = result.exam.score * 10; // score 0-10 → percent 0-100 cho vòng tròn
+    const scoreColor = result.exam.score >= 8 ? "var(--success)" : result.exam.score >= 5 ? "var(--warning)" : "var(--danger)";
 
     return (
       <div className="exam-layout">
@@ -324,7 +324,7 @@ export function ExamPage() {
                     />
                   </svg>
                   <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: "1.5rem", fontWeight: 800, color: scoreColor }}>{result.exam.score.toFixed(1)}</span>
+                    <span style={{ fontSize: "1.5rem", fontWeight: 800, color: scoreColor }}>{result.exam.score}<span style={{ fontSize: "0.9rem" }}>/10</span></span>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-tertiary)", fontWeight: 600 }}>điểm</span>
                   </div>
                 </div>
