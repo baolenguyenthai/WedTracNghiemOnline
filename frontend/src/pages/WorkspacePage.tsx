@@ -2023,6 +2023,7 @@ type AdminExamRow = {
   submittedAt: string | null;
   createdAt: string;
   durationSeconds: number | null;
+  subjectName?: string;
 };
 
 type AdminExamDetail = AdminExamRow & {
@@ -2209,13 +2210,18 @@ function AdminExamsSection({ token }: { token: string | null }) {
         {(loading || detailLoading) ? <LoadingState /> : null}
 
         <div className="stack scrollable-list">
-          <Table headers={["ID", "Học viên", "Điểm", "Kết quả", "Thời gian", "Trạng thái", "Ngày thi", ""]}>
-            {exams.map(exam => (
+          <Table headers={["STT", "Học viên", "Môn học", "Điểm", "Kết quả", "Thời gian", "Trạng thái", "Ngày thi", ""]}>
+            {exams.map((exam, idx) => (
               <tr key={exam.id} style={{ cursor: "pointer" }} onClick={() => void openDetail(exam.id)}>
-                <td style={{ opacity: 0.5, fontSize: "0.8rem" }}>#{exam.id}</td>
+                <td style={{ opacity: 0.5, fontSize: "0.8rem" }}>
+                  {(page - 1) * 20 + idx + 1}
+                </td>
                 <td>
                   <strong style={{ fontSize: "0.85rem" }}>{exam.userName}</strong>
                   <div className="section-note">@{exam.username}</div>
+                </td>
+                <td>
+                  <strong style={{ fontSize: "0.85rem", color: "var(--primary-hover)" }}>{exam.subjectName}</strong>
                 </td>
                 <td>
                   <strong style={{ color: scoreColor(exam.score) }}>

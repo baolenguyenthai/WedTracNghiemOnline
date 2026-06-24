@@ -886,7 +886,7 @@ adminRouter.get(
         where,
         include: {
           user: { select: { id: true, fullName: true, username: true } },
-          bank: { select: { id: true, name: true } }
+          bank: { select: { id: true, name: true, subject: { select: { name: true } } } }
         },
         orderBy: { startedAt: "desc" },
         skip: (page - 1) * limit,
@@ -896,7 +896,7 @@ adminRouter.get(
     ]);
 
     res.json(ok({
-      exams: exams.map(e => {
+      exams: exams.map((e) => {
         const dur = e.startedAt && e.submittedAt
           ? Math.round((e.submittedAt.getTime() - e.startedAt.getTime()) / 1000)
           : null;
@@ -907,6 +907,7 @@ adminRouter.get(
           username: e.user?.username ?? "",
           bankId: e.bankId,
           bankName: e.bank?.name ?? "",
+          subjectName: e.bank?.subject?.name ?? "",
           score: e.score,
           totalQuestions: e.totalQuestions,
           correctCount: e.correctCount,
