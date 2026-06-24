@@ -219,7 +219,11 @@ export function ExamPage() {
         })
       }, token);
       setSession(response.data.exam);
-      setQuestions(response.data.questions);
+      const randomizedQuestions = response.data.questions.map((q) => ({
+        ...q,
+        answers: [...q.answers].sort(() => Math.random() - 0.5)
+      }));
+      setQuestions(randomizedQuestions);
       setAnswers({});
       setCurrentIndex(0);
       setSecondsLeft(response.data.exam.durationSeconds);
