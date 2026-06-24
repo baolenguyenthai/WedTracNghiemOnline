@@ -395,6 +395,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-top: 1px solid var(--border-subtle);
 }
 .subsection:first-child { padding-top: 0; border-top: 0; }
+.section-grid.columns-2 > .subsection { padding-top: 0; border-top: 0; }
 .subsection-head {
   display: flex;
   align-items: flex-start;
