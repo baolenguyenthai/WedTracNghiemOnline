@@ -695,7 +695,7 @@ function LeaderboardSection({
               </td>
               <td>{row.subjectName}</td>
               <td>{row.gradeName}</td>
-              <td><strong style={{ color: "var(--primary-hover)" }}>{Math.round(row.score)}<span style={{ fontSize: "0.7em", opacity: 0.6 }}>/10</span></strong></td>
+              <td><strong style={{ color: "var(--primary-hover)" }}>{Math.round(row.score)}</strong></td>
               <td>{row.correctCount}/{row.totalQuestions}</td>
               <td>{formatDuration(row.durationSeconds)}</td>
             </tr>
@@ -1158,7 +1158,7 @@ function AdminOverviewSection({ token }: { token: string | null }) {
                       <p style={{ wordBreak: "break-word", marginTop: "0.25rem" }}>{exam.userName}</p>
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <strong style={{ color: "var(--primary-hover)" }}>{Math.round(exam.score)}/10</strong>
+                      <strong style={{ color: "var(--primary-hover)" }}>{Math.round(exam.score)}</strong>
                       <div className="section-note">{formatDateTime(exam.submittedAt)}</div>
                     </div>
                   </div>
@@ -2135,7 +2135,7 @@ function AdminExamsSection({ token }: { token: string | null }) {
                 <span>📚 {detail.bankName}</span>
                 <span>⏱ {formatDur(detail.durationSeconds)}</span>
                 <span style={{ color: scoreColor(detail.score), fontWeight: 700 }}>
-                  Điểm: {detail.score !== null ? `${Math.round(detail.score)}/10` : "—"}
+                  Điểm: {detail.score !== null ? Math.round(detail.score) : "—"}
                 </span>
                 <span>✅ {detail.correctCount}/{detail.totalQuestions} câu đúng</span>
               </div>
@@ -2225,7 +2225,7 @@ function AdminExamsSection({ token }: { token: string | null }) {
                 </td>
                 <td>
                   <strong style={{ color: scoreColor(exam.score) }}>
-                    {exam.score !== null ? `${Math.round(exam.score)}/10` : <span style={{ opacity: 0.4 }}>—</span>}
+                    {exam.score !== null ? Math.round(exam.score) : <span style={{ opacity: 0.4 }}>—</span>}
                   </strong>
                 </td>
                 <td style={{ fontSize: "0.85rem" }}>

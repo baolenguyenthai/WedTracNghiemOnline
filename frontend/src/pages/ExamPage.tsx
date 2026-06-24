@@ -324,7 +324,7 @@ export function ExamPage() {
                     />
                   </svg>
                   <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: "1.5rem", fontWeight: 800, color: scoreColor }}>{result.exam.score}<span style={{ fontSize: "0.9rem" }}>/10</span></span>
+                    <span style={{ fontSize: "1.5rem", fontWeight: 800, color: scoreColor }}>{result.exam.score}</span>
                     <span style={{ fontSize: "0.65rem", color: "var(--text-tertiary)", fontWeight: 600 }}>điểm</span>
                   </div>
                 </div>
