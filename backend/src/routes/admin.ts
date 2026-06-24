@@ -866,7 +866,7 @@ adminRouter.get(
     const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
     const search = String(req.query.search || "");
     const bankId = req.query.bankId ? Number(req.query.bankId) : undefined;
-    const status = req.query.status as string | undefined; // "submitted" | "ongoing"
+    const status = req.query.status as string | undefined;
 
     const where: Prisma.ExamWhereInput = {
       ...(search ? {
@@ -888,7 +888,7 @@ adminRouter.get(
           user: { select: { id: true, fullName: true, username: true } },
           bank: { select: { id: true, name: true } }
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { startedAt: "desc" },
         skip: (page - 1) * limit,
         take: limit
       }),
@@ -896,20 +896,25 @@ adminRouter.get(
     ]);
 
     res.json(ok({
-      exams: exams.map(e => ({
-        id: e.id,
-        userId: e.userId,
-        userName: e.user.fullName,
-        username: e.user.username,
-        bankId: e.bankId,
-        bankName: e.bank.name,
-        score: e.score,
-        totalQuestions: e.totalQuestions,
-        correctCount: e.correctCount,
-        submittedAt: e.submittedAt,
-        createdAt: e.createdAt,
-        durationSeconds: e.durationSeconds
-      })),
+      exams: exams.map(e => {
+        const dur = e.startedAt && e.submittedAt
+          ? Math.round((e.submittedAt.getTime() - e.startedAt.getTime()) / 1000)
+          : null;
+        return {
+          id: e.id,
+          userId: e.userId,
+          userName: e.user?.fullName ?? "",
+          username: e.user?.username ?? "",
+          bankId: e.bankId,
+          bankName: e.bank?.name ?? "",
+          score: e.score,
+          totalQuestions: e.totalQuestions,
+          correctCount: e.correctCount,
+          submittedAt: e.submittedAt,
+          createdAt: e.startedAt,
+          durationSeconds: dur
+        };
+      }),
       total,
       page,
       totalPages: Math.ceil(total / limit)
@@ -950,8 +955,7 @@ adminRouter.get(
               include: {
                 answers: { select: { id: true, content: true, isCorrect: true } }
               }
-            },
-            selectedAnswer: { select: { id: true, content: true, isCorrect: true } }
+            }
           }
         }
       }
@@ -959,30 +963,50 @@ adminRouter.get(
 
     if (!exam) throw new AppError(404, "Không tìm thấy bài thi.");
 
+    // Lấy thông tin đáp án đã chọn theo selectedAnswerId
+    const selectedAnswerIds = exam.items
+      .map(i => i.selectedAnswerId)
+      .filter((id): id is number => id !== null);
+
+    const selectedAnswers = selectedAnswerIds.length > 0
+      ? await prisma.answer.findMany({
+          where: { id: { in: selectedAnswerIds } },
+          select: { id: true, content: true, isCorrect: true }
+        })
+      : [];
+    const answerMap = new Map(selectedAnswers.map(a => [a.id, a]));
+
+    const dur = exam.startedAt && exam.submittedAt
+      ? Math.round((exam.submittedAt.getTime() - exam.startedAt.getTime()) / 1000)
+      : null;
+
     res.json(ok({
       exam: {
         id: exam.id,
         userId: exam.userId,
-        userName: exam.user.fullName,
-        username: exam.user.username,
+        userName: exam.user?.fullName ?? "",
+        username: exam.user?.username ?? "",
         bankId: exam.bankId,
-        bankName: exam.bank.name,
+        bankName: exam.bank?.name ?? "",
         score: exam.score,
         totalQuestions: exam.totalQuestions,
         correctCount: exam.correctCount,
         submittedAt: exam.submittedAt,
-        createdAt: exam.createdAt,
-        durationSeconds: exam.durationSeconds,
-        items: exam.items.map((item, idx) => ({
-          index: idx + 1,
-          questionId: item.questionId,
-          questionContent: item.question.content,
-          answers: item.question.answers,
-          selectedAnswerId: item.selectedAnswerId,
-          selectedAnswerContent: item.selectedAnswer?.content ?? null,
-          correctAnswerContent: item.question.answers.find(a => a.isCorrect)?.content ?? null,
-          isCorrect: item.isCorrect
-        }))
+        createdAt: exam.startedAt,
+        durationSeconds: dur,
+        items: exam.items.map((item, idx) => {
+          const sel = item.selectedAnswerId ? answerMap.get(item.selectedAnswerId) : null;
+          return {
+            index: idx + 1,
+            questionId: item.questionId,
+            questionContent: item.question.content,
+            answers: item.question.answers,
+            selectedAnswerId: item.selectedAnswerId,
+            selectedAnswerContent: sel?.content ?? null,
+            correctAnswerContent: item.question.answers.find((a: { isCorrect: boolean; content: string }) => a.isCorrect)?.content ?? null,
+            isCorrect: item.isCorrect
+          };
+        })
       }
     }));
   })
@@ -1004,7 +1028,7 @@ adminRouter.get(
         include: {
           bank: { select: { id: true, name: true } }
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { startedAt: "desc" },
         skip: (page - 1) * limit,
         take: limit
       }),
@@ -1012,19 +1036,26 @@ adminRouter.get(
     ]);
 
     res.json(ok({
-      exams: exams.map(e => ({
-        id: e.id,
-        bankId: e.bankId,
-        bankName: e.bank.name,
-        score: e.score,
-        totalQuestions: e.totalQuestions,
-        correctCount: e.correctCount,
-        submittedAt: e.submittedAt,
-        createdAt: e.createdAt,
-        durationSeconds: e.durationSeconds
-      })),
+      exams: exams.map(e => {
+        const dur = e.startedAt && e.submittedAt
+          ? Math.round((e.submittedAt.getTime() - e.startedAt.getTime()) / 1000)
+          : null;
+        return {
+          id: e.id,
+          bankId: e.bankId,
+          bankName: e.bank?.name ?? "",
+          score: e.score,
+          totalQuestions: e.totalQuestions,
+          correctCount: e.correctCount,
+          submittedAt: e.submittedAt,
+          createdAt: e.startedAt,
+          durationSeconds: dur
+        };
+      }),
       total,
       totalPages: Math.ceil(total / limit)
     }));
   })
 );
+
+
