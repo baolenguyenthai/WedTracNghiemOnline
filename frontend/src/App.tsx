@@ -5,6 +5,7 @@ import { LoadingState } from "@/components/common";
 import { LoginPage, RegisterPage, ForgotPasswordPage } from "@/pages/AuthPages";
 import { WorkspacePage } from "@/pages/WorkspacePage";
 import { ExamPage } from "@/pages/ExamPage";
+import { FlashcardPage } from "@/pages/FlashcardPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -39,6 +40,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ExamPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/flashcard/:bankId"
+        element={
+          <ProtectedRoute>
+            <FlashcardPage />
           </ProtectedRoute>
         }
       />

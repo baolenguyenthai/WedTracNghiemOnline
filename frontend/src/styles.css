@@ -1161,3 +1161,94 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .data-table td { padding: 0.5rem; }
   .data-table td { font-size: 0.8rem; }
 }
+
+/* =========================================
+   FLASHCARD SYSTEM
+   ========================================= */
+.flashcard-container {
+  width: 100%;
+  max-width: 600px;
+  height: 400px;
+  perspective: 1000px;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.flashcard-container.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.flashcard-front {
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+  color: var(--text-primary);
+}
+
+.flashcard-back {
+  background: linear-gradient(145deg, rgba(22, 101, 52, 0.9), rgba(20, 83, 45, 0.9));
+  color: #fff;
+  transform: rotateY(180deg);
+}
+
+.flashcard-content {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.6;
+  text-wrap: balance;
+}
+
+.flashcard-hint {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  opacity: 0.8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.flashcard-back .flashcard-hint {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.flashcard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 600px;
+  margin: 2rem auto 0;
+  gap: 1rem;
+}
+
+.flashcard-progress {
+  flex-grow: 1;
+  text-align: center;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
