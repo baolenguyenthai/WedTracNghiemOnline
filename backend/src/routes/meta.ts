@@ -59,6 +59,10 @@ metaRouter.delete(
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const count = await prisma.questionBank.count({ where: { gradeId: id } });
+    if (count > 0) {
+      throw new AppError(400, "Không thể xóa cấp học vì đang có bộ đề thuộc cấp học này.");
+    }
     await prisma.grade.delete({ where: { id } });
     res.json(ok({}, "Đã xóa cấp học."));
   })
@@ -99,6 +103,10 @@ metaRouter.delete(
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const count = await prisma.questionBank.count({ where: { subjectId: id } });
+    if (count > 0) {
+      throw new AppError(400, "Không thể xóa môn học vì đang có bộ đề thuộc môn học này.");
+    }
     await prisma.subject.delete({ where: { id } });
     res.json(ok({}, "Đã xóa môn học."));
   })
