@@ -81,7 +81,7 @@ export async function generateQuestionsWithGemini(prompt: string): Promise<Gener
   };
 
   let lastError: Error | null = null;
-  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-1.5-pro", "gemini-1.5-flash-latest"]));
+  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-1.5-pro"]));
 
   for (const apiKey of apiKeys) {
     for (const model of models) {
