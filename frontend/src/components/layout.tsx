@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMemo, useState, useEffect } from "react";
-import { LayoutDashboard, Menu, LogOut, UserCircle2, ClipboardList, ShieldCheck, Upload, Medal, Heart, Clock3, BookOpen, Users, Layers3, Sparkles, BarChart3, CircleUserRound, X, Sun, Moon, FileText } from "lucide-react";
+import { LayoutDashboard, Menu, LogOut, UserCircle2, ClipboardList, ShieldCheck, Upload, Medal, Heart, Clock3, BookOpen, Users, Layers3, Sparkles, BarChart3, CircleUserRound, X, Sun, Moon, FileText, Maximize, Minimize } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { Badge, Button } from "./common";
@@ -26,13 +26,30 @@ export function WorkspaceLayout({
   const [searchParams, setSearchParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem("ui-theme") || "dark");
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("ui-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+  }, []);
+
   const toggleTheme = () => setTheme((v) => (v === "dark" ? "light" : "dark"));
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
+    } else {
+      document.exitFullscreen().catch(err => console.error(err));
+    }
+  };
 
   const activeSection = searchParams.get("section") || sections[0]?.key || "overview";
 
@@ -142,6 +159,14 @@ export function WorkspaceLayout({
               title={theme === "dark" ? "Chuyển sang giao diện sáng" : "Chuyển sang giao diện tối"}
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Thu nhỏ màn hình" : "Toàn màn hình"}
+            >
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
             </button>
           </div>
         </header>
