@@ -456,8 +456,18 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[var(--text-tertiary)] bg-transparent border-none cursor-pointer flex"
-              style={{ top: "50%", transform: "translateY(-50%)" }}
+              style={{
+                position: "absolute",
+                right: "0.65rem",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-tertiary)",
+                display: "flex",
+                padding: "0.25rem"
+              }}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
