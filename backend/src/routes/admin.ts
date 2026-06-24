@@ -446,7 +446,7 @@ adminRouter.get(
       where: { exam: { bankId: id } },
       include: {
         question: {
-          include: { answers: true }
+          include: { answers: { orderBy: { id: "asc" } } }
         }
       }
     });

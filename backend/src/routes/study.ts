@@ -22,7 +22,7 @@ studyRouter.get(
       include: {
         question: {
           include: {
-            answers: true,
+            answers: { orderBy: { id: "asc" } },
             bank: {
               select: { name: true, subject: true }
             }

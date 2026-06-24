@@ -112,7 +112,7 @@ banksRouter.get(
       include: {
         questions: {
           include: {
-            answers: true
+            answers: { orderBy: { id: 'asc' } }
           }
         }
       }
@@ -249,7 +249,7 @@ banksRouter.post(
             }))
           }
         },
-        include: { questions: { include: { answers: true } } }
+        include: { questions: { include: { answers: { orderBy: { id: 'asc' } } } } }
       });
     });
 
@@ -333,7 +333,7 @@ banksRouter.post(
             }))
           }
         },
-        include: { questions: { include: { answers: true } } }
+        include: { questions: { include: { answers: { orderBy: { id: 'asc' } } } } }
       });
 
       return createdBank;
