@@ -76,6 +76,14 @@ import type {
   Subject
 } from "@/types";
 
+type ParsedQuestion = {
+  content: string;
+  difficulty: string;
+  answers: Array<{ content: string; isCorrect: boolean }>;
+  isValid?: boolean;
+  errors?: string[];
+};
+
 type CatalogData = {
   grades: Grade[];
   subjects: Subject[];
@@ -743,6 +751,7 @@ function UploadSection({
     prompt: ""
   });
   const [file, setFile] = useState<File | null>(null);
+  const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[] | null>(null);
   const [generatedBank, setGeneratedBank] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -752,8 +761,8 @@ function UploadSection({
     event.preventDefault();
     if (!token) return;
 
-    if (!fileForm.bankName.trim() || !fileForm.gradeId || !fileForm.subjectName.trim() || !file) {
-      setError("Vui lòng điền đầy đủ Tên bộ đề, Cấp học, Môn học và chọn File tải lên.");
+    if (!file) {
+      setError("Vui lòng chọn File tải lên.");
       return;
     }
 
@@ -763,10 +772,7 @@ function UploadSection({
     try {
       const formData = new FormData();
       formData.set("file", file);
-      Object.entries(fileForm).forEach(([key, value]) => {
-        formData.set(key, String(value));
-      });
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000/api"}/banks/upload`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:4000/api"}/banks/parse`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -775,12 +781,51 @@ function UploadSection({
       });
       const json = await response.json();
       if (!response.ok || !json.success) {
-        throw new Error(json.message || "Tải lên thất bại.");
+        throw new Error(json.message || "Phân tích file thất bại.");
       }
-      setMessage(`Đã gửi ${json.data.questionCount} câu hỏi để duyệt.`);
-      setGeneratedBank(json.data.bank);
+      setParsedQuestions(json.data.questions);
+      setMessage(`Đã phân tích ${json.data.questions.length} câu hỏi. Vui lòng kiểm tra và xác nhận.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải file.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitParsed = async () => {
+    if (!token || !parsedQuestions) return;
+
+    if (!fileForm.bankName.trim() || !fileForm.gradeId || !fileForm.subjectName.trim()) {
+      setError("Vui lòng điền đầy đủ Tên bộ đề, Cấp học, Môn học.");
+      return;
+    }
+
+    const invalidCount = parsedQuestions.filter(q => !q.isValid).length;
+    if (invalidCount > 0) {
+      setError(`Có ${invalidCount} câu hỏi bị lỗi. Vui lòng sửa lỗi trước khi lưu.`);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await apiFetch<{ bank: BankSummary; questionCount: number }>("/banks/create-from-parsed", {
+        method: "POST",
+        body: JSON.stringify({
+          ...fileForm,
+          gradeId: Number(fileForm.gradeId),
+          defaultQuestionCount: fileForm.defaultQuestionCount ? Number(fileForm.defaultQuestionCount) : undefined,
+          defaultDurationMinutes: fileForm.defaultDurationMinutes ? Number(fileForm.defaultDurationMinutes) : undefined,
+          questions: parsedQuestions
+        })
+      }, token);
+      setMessage(`Đã lưu ${response.data.questionCount} câu hỏi thành công.`);
+      setGeneratedBank(response.data.bank);
+      setParsedQuestions(null);
+      setFile(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tạo bộ đề.");
     } finally {
       setLoading(false);
     }
@@ -830,49 +875,91 @@ function UploadSection({
       </div>
 
       {mode === "file" ? (
-        <form className="stack" onSubmit={submitFile}>
-          <div className="form-grid form-columns-2">
+        !parsedQuestions ? (
+          <form className="stack" onSubmit={submitFile}>
+            <div className="form-grid form-columns-2">
+              <label className="field-group">
+                <span>Tên bộ đề</span>
+                <Input value={fileForm.bankName} onChange={(event) => setFileForm((value) => ({ ...value, bankName: event.target.value }))} />
+              </label>
+              <label className="field-group">
+                <span>Mô tả</span>
+                <Input value={fileForm.description} onChange={(event) => setFileForm((value) => ({ ...value, description: event.target.value }))} />
+              </label>
+              <label className="field-group">
+                <span>Cấp học</span>
+                <Select value={fileForm.gradeId} onChange={(event) => setFileForm((value) => ({ ...value, gradeId: event.target.value }))}>
+                  <option value="">Chọn cấp học</option>
+                  {catalog.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
+                </Select>
+              </label>
+              <label className="field-group">
+                <span>Môn học</span>
+                <Input value={fileForm.subjectName} onChange={(event) => setFileForm((value) => ({ ...value, subjectName: event.target.value }))} placeholder="Nhập tên môn học..." />
+              </label>
+              <label className="field-group">
+                <span>Số câu mặc định</span>
+                <Input value={fileForm.defaultQuestionCount} onChange={(event) => setFileForm((value) => ({ ...value, defaultQuestionCount: event.target.value }))} />
+              </label>
+              <label className="field-group">
+                <span>Thời gian (phút)</span>
+                <Input value={fileForm.defaultDurationMinutes} onChange={(event) => setFileForm((value) => ({ ...value, defaultDurationMinutes: event.target.value }))} />
+              </label>
+            </div>
+            <Toggle checked={fileForm.isPublic} onChange={(checked) => setFileForm((value) => ({ ...value, isPublic: checked }))} label="Cho phép chỉnh số câu khi làm bài" />
             <label className="field-group">
-              <span>Tên bộ đề</span>
-              <Input value={fileForm.bankName} onChange={(event) => setFileForm((value) => ({ ...value, bankName: event.target.value }))} />
+              <span>Chọn file</span>
+              <Input type="file" accept=".csv,.xlsx,.xls,.docx" onChange={(event) => setFile(event.target.files?.[0] || null)} />
             </label>
-            <label className="field-group">
-              <span>Mô tả</span>
-              <Input value={fileForm.description} onChange={(event) => setFileForm((value) => ({ ...value, description: event.target.value }))} />
-            </label>
-            <label className="field-group">
-              <span>Cấp học</span>
-              <Select value={fileForm.gradeId} onChange={(event) => setFileForm((value) => ({ ...value, gradeId: event.target.value }))}>
-                <option value="">Chọn cấp học</option>
-                {catalog.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
-              </Select>
-            </label>
-            <label className="field-group">
-              <span>Môn học</span>
-              <Input value={fileForm.subjectName} onChange={(event) => setFileForm((value) => ({ ...value, subjectName: event.target.value }))} placeholder="Nhập tên môn học..." />
-            </label>
-            <label className="field-group">
-              <span>Số câu mặc định</span>
-              <Input value={fileForm.defaultQuestionCount} onChange={(event) => setFileForm((value) => ({ ...value, defaultQuestionCount: event.target.value }))} />
-            </label>
-            <label className="field-group">
-              <span>Thời gian (phút)</span>
-              <Input value={fileForm.defaultDurationMinutes} onChange={(event) => setFileForm((value) => ({ ...value, defaultDurationMinutes: event.target.value }))} />
-            </label>
+            <div className="section-note">CSV/XLSX cần các cột: question, difficulty, A, B, C, D, correct. DOCX hỗ trợ tự động nhận diện câu hỏi (Câu 1:, 1.) và đáp án.</div>
+            {error ? <div className="form-error">{error}</div> : null}
+            {message ? <div className="form-success">{message}</div> : null}
+            <Button type="submit" disabled={loading}>
+              {loading ? <LoaderCircle size={14} className="spin" /> : <FileUp size={14} />}
+              <span>{loading ? "Đang phân tích..." : "Phân tích file"}</span>
+            </Button>
+          </form>
+        ) : (
+          <div className="stack">
+            <h3>Xem trước câu hỏi ({parsedQuestions.length} câu)</h3>
+            <div className="section-note">Vui lòng rà soát lại các câu hỏi đã nhận diện. Bấm "Lưu bộ đề" nếu tất cả hợp lệ.</div>
+            
+            <div className="list scrollable-list" style={{ maxHeight: 400, overflowY: "auto", border: "1px solid var(--border)", borderRadius: 6, padding: "0.5rem" }}>
+              {parsedQuestions.map((q, index) => (
+                <div key={index} style={{ marginBottom: "1rem", paddingBottom: "1rem", borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ fontWeight: 600, color: q.isValid ? "inherit" : "var(--danger)" }}>
+                    Câu {index + 1}: {q.content}
+                  </div>
+                  {!q.isValid && q.errors && (
+                    <div style={{ color: "var(--danger)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
+                      Lỗi: {q.errors.join(", ")}
+                    </div>
+                  )}
+                  <div style={{ marginTop: "0.5rem", paddingLeft: "1rem" }}>
+                    {q.answers.map((a, i) => (
+                      <div key={i} style={{ color: a.isCorrect ? "var(--success)" : "inherit", fontWeight: a.isCorrect ? 600 : 400 }}>
+                        {String.fromCharCode(65 + i)}. {a.content} {a.isCorrect && "(Đúng)"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {error ? <div className="form-error">{error}</div> : null}
+            {message ? <div className="form-success">{message}</div> : null}
+            
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <Button type="button" variant="outline" onClick={() => setParsedQuestions(null)}>
+                Hủy và tải file khác
+              </Button>
+              <Button type="button" onClick={submitParsed} disabled={loading || parsedQuestions.some(q => !q.isValid)}>
+                {loading ? <LoaderCircle size={14} className="spin" /> : <Sparkles size={14} />}
+                <span>{loading ? "Đang lưu..." : "Xác nhận tạo bộ đề"}</span>
+              </Button>
+            </div>
           </div>
-          <Toggle checked={fileForm.isPublic} onChange={(checked) => setFileForm((value) => ({ ...value, isPublic: checked }))} label="Cho phép chỉnh số câu khi làm bài" />
-          <label className="field-group">
-            <span>Chọn file</span>
-            <Input type="file" accept=".csv,.xlsx,.xls,.docx" onChange={(event) => setFile(event.target.files?.[0] || null)} />
-          </label>
-          <div className="section-note">CSV/XLSX cần các cột: question, difficulty, A, B, C, D, correct. DOCX hỗ trợ câu hỏi bắt đầu bằng "Câu hỏi:" và đáp án A-D.</div>
-          {error ? <div className="form-error">{error}</div> : null}
-          {message ? <div className="form-success">{message}</div> : null}
-          <Button type="submit" disabled={loading}>
-            {loading ? <LoaderCircle size={14} className="spin" /> : <FileUp size={14} />}
-            <span>{loading ? "Đang tải..." : "Tải lên"}</span>
-          </Button>
-        </form>
+        )
       ) : (
         <form className="stack" onSubmit={submitAi}>
           <div className="form-grid form-columns-2">

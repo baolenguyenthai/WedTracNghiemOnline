@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { z } from "zod";
 import { AppError, asyncHandler, ok } from "../lib/http.js";
 import { aiGenerateSchema, bankCreateSchema, bankQuerySchema, importBankSchema } from "../lib/validators.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -173,49 +174,74 @@ banksRouter.post(
 );
 
 banksRouter.post(
-  "/upload",
+  "/parse",
   requireAuth,
   upload.single("file"),
   asyncHandler(async (req, res) => {
-    const meta = importBankSchema.parse(req.body);
-    
-    let finalSubjectId = meta.subjectId;
-    if (!finalSubjectId && meta.subjectName) {
-      let sub = await prisma.subject.findFirst({ where: { name: meta.subjectName } });
+    if (!req.file) {
+      throw new AppError(400, "Vui lòng chọn file.");
+    }
+    const questions = await parseImportedQuestions(req.file);
+    if (!questions.length) {
+      throw new AppError(400, "File không chứa câu hỏi hợp lệ hoặc không đúng định dạng.");
+    }
+    res.json(ok({ questions }, "Đã phân tích file thành công."));
+  })
+);
+
+const createParsedSchema = z.object({
+  bankName: z.string().min(1, "Tên bộ đề không được trống"),
+  description: z.string().optional(),
+  subjectId: z.coerce.number().optional(),
+  subjectName: z.string().optional(),
+  gradeId: z.coerce.number(),
+  isPublic: z.boolean().default(false),
+  defaultQuestionCount: z.coerce.number().optional(),
+  defaultDurationMinutes: z.coerce.number().optional(),
+  questions: z.array(z.object({
+    content: z.string(),
+    difficulty: z.string(),
+    answers: z.array(z.object({
+      content: z.string(),
+      isCorrect: z.boolean()
+    }))
+  })).min(1, "Danh sách câu hỏi không được trống")
+});
+
+banksRouter.post(
+  "/create-from-parsed",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const data = createParsedSchema.parse(req.body);
+
+    let finalSubjectId = data.subjectId;
+    if (!finalSubjectId && data.subjectName) {
+      let sub = await prisma.subject.findFirst({ where: { name: data.subjectName } });
       if (!sub) {
-        sub = await prisma.subject.create({ data: { name: meta.subjectName } });
+        sub = await prisma.subject.create({ data: { name: data.subjectName } });
       }
       finalSubjectId = sub.id;
     }
     if (!finalSubjectId) throw new AppError(400, "Vui lòng nhập tên môn học.");
 
-    if (!req.file) {
-      throw new AppError(400, "Vui lòng chọn file.");
-    }
-
-    const questions = await parseImportedQuestions(req.file);
-    if (!questions.length) {
-      throw new AppError(400, "File không chứa câu hỏi hợp lệ.");
-    }
-
     const bank = await prisma.$transaction(async (tx) => {
-      const createdBank = await tx.questionBank.create({
+      return tx.questionBank.create({
         data: {
-          name: meta.bankName,
-          description: meta.description || "Bộ câu hỏi tải lên từ file",
-          gradeId: meta.gradeId,
+          name: data.bankName,
+          description: data.description || "Bộ câu hỏi tải lên từ file",
+          gradeId: data.gradeId,
           subjectId: finalSubjectId,
           creatorId: req.user!.id,
           status: "CHO_DUYET",
-          isPublic: meta.isPublic,
-          defaultQuestionCount: meta.defaultQuestionCount ?? questions.length,
-          defaultDurationMinutes: meta.defaultDurationMinutes ?? 20,
+          isPublic: data.isPublic,
+          defaultQuestionCount: data.defaultQuestionCount ?? data.questions.length,
+          defaultDurationMinutes: data.defaultDurationMinutes ?? 20,
           questions: {
-            create: questions.map((question) => ({
+            create: data.questions.map((question: any) => ({
               content: question.content,
               difficulty: mapDifficulty(question.difficulty),
               answers: {
-                create: question.answers.map((answer) => ({
+                create: question.answers.map((answer: any) => ({
                   content: answer.content,
                   isCorrect: answer.isCorrect
                 }))
@@ -225,19 +251,9 @@ banksRouter.post(
         },
         include: { questions: { include: { answers: true } } }
       });
-
-      return createdBank;
     });
 
-    res.json(
-      ok(
-        {
-          bank,
-          questionCount: questions.length
-        },
-        "Đã tải lên bộ câu hỏi và gửi duyệt."
-      )
-    );
+    res.json(ok({ bank, questionCount: data.questions.length }, "Đã lưu bộ câu hỏi và gửi duyệt."));
   })
 );
 

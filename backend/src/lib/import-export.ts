@@ -12,6 +12,8 @@ export type ImportedQuestion = {
   content: string;
   difficulty: string;
   answers: Array<{ content: string; isCorrect: boolean }>;
+  isValid?: boolean;
+  errors?: string[];
 };
 
 function normalizeHeader(value: string) {
@@ -25,19 +27,19 @@ function buildAnswerSet(options: string[], correctIndex: number) {
   }));
 }
 
-function validateQuestion(question: ImportedQuestion) {
+function validateQuestion(question: ImportedQuestion): ImportedQuestion {
+  const errors: string[] = [];
   if (!question.content.trim()) {
-    throw new Error("Câu hỏi không được trống.");
+    errors.push("Câu hỏi không được trống.");
   }
-  if (question.answers.length !== 4) {
-    throw new Error("Mỗi câu hỏi phải có đúng 4 đáp án.");
-  }
-  if (question.answers.some((item) => !item.content.trim())) {
-    throw new Error("Mỗi đáp án phải có nội dung.");
+  if (question.answers.length < 2) {
+    errors.push("Cần ít nhất 2 đáp án.");
+  } else if (question.answers.some((item) => !item.content.trim())) {
+    errors.push("Các đáp án không được để trống.");
   }
   const correctCount = question.answers.filter((item) => item.isCorrect).length;
   if (correctCount !== 1) {
-    throw new Error("Mỗi câu hỏi phải có đúng 1 đáp án đúng.");
+    errors.push(`Cần có đúng 1 đáp án đúng (đang có ${correctCount}).`);
   }
   return {
     content: normalizeText(question.content),
@@ -45,7 +47,9 @@ function validateQuestion(question: ImportedQuestion) {
     answers: question.answers.map((answer) => ({
       content: normalizeText(answer.content),
       isCorrect: Boolean(answer.isCorrect)
-    }))
+    })),
+    isValid: errors.length === 0,
+    errors
   };
 }
 
@@ -85,9 +89,6 @@ function parseCsvQuestions(raw: string) {
     ];
     const correct = headers.correct || headers.dap_an_dung || "A";
     const correctIndex = answerIndexFromLabel(correct);
-    if (correctIndex < 0) {
-      throw new Error(`Đáp án đúng không hợp lệ: ${correct}`);
-    }
     return validateQuestion({
       content: question,
       difficulty,
@@ -106,9 +107,6 @@ function parseExcelQuestions(buffer: Buffer) {
     );
 
     const correctIndex = answerIndexFromLabel(headers.correct || headers.dap_an_dung || "A");
-    if (correctIndex < 0) {
-      throw new Error(`Đáp án đúng không hợp lệ: ${headers.correct || headers.dap_an_dung}`);
-    }
 
     return validateQuestion({
       content: headers.question || headers.cau_hoi || headers.noi_dung,
@@ -135,7 +133,7 @@ function parseDocxQuestions(buffer: Buffer) {
         return;
       }
 
-      const questionMatch = paragraph.match(/^(?:câu\s*hỏi\s*:|question\s*:)\s*(.+)$/i);
+      const questionMatch = paragraph.match(/^(?:câu\s*hỏi|question|câu|bài)\s*\d*[\.\:\-]?\s*(.+)$/i) || paragraph.match(/^\d+[\.\:\-]\s*(.+)$/i);
       if (questionMatch) {
         if (current) {
           questions.push(validateQuestion(current));
@@ -148,9 +146,9 @@ function parseDocxQuestions(buffer: Buffer) {
         return;
       }
 
-      const answerMatch = paragraph.match(/^([A-D])\s*[\.\)\-:]\s*(.+)$/i);
+      const answerMatch = paragraph.match(/^([A-E])\s*[\.\)\-:]\s*(.+)$/i);
       if (answerMatch && current) {
-        const isCorrect = html.includes("<strong") || html.includes("<b") || /\*(.+)|\[đúng\]|\[correct\]/i.test(paragraph);
+        const isCorrect = html.includes("<strong") || html.includes("<b") || html.includes("<u") || html.includes('style="text-decoration: underline"') || html.includes('style="color:') || /\*(.+)|\[đúng\]|\[correct\]/i.test(paragraph);
         current.answers.push({
           content: answerMatch[2].replace(/^\*\s*/, "").replace(/\s*\[(đúng|correct)\]\s*$/i, "").trim(),
           isCorrect
