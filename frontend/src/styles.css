@@ -1174,6 +1174,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
     height: 14px;
     margin-right: 0.25rem;
   }
+  
+  .action-btn-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.action-btn-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 /* =========================================
