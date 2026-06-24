@@ -116,7 +116,20 @@ export async function generateQuestionsWithGemini(prompt: string): Promise<Gener
           throw new Error("AI trả về dữ liệu không hợp lệ.");
         }
 
-        return parsed as GeneratedQuestion[];
+        const parsedQuestions = parsed as GeneratedQuestion[];
+        
+        // Trộn ngẫu nhiên vị trí các đáp án để tránh AI luôn xếp đáp án đúng ở một vị trí cố định
+        for (const q of parsedQuestions) {
+          if (Array.isArray(q.answers)) {
+            // Fisher-Yates shuffle
+            for (let i = q.answers.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [q.answers[i], q.answers[j]] = [q.answers[j], q.answers[i]];
+            }
+          }
+        }
+
+        return parsedQuestions;
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
         console.error(`Lỗi tạo đề với key ${apiKey.substring(0, 8)}... model ${model}:`, lastError.message);
