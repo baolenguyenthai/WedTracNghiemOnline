@@ -1474,15 +1474,23 @@ function AdminCatalogSection({
   const removeGrade = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa không?")) return;
     if (!token) return;
-    await apiFetch(`/meta/admin/grades/${id}`, { method: "DELETE" }, token);
-    await catalog.refresh();
+    try {
+      await apiFetch(`/meta/admin/grades/${id}`, { method: "DELETE" }, token);
+      await catalog.refresh();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const removeSubject = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa không?")) return;
     if (!token) return;
-    await apiFetch(`/meta/admin/subjects/${id}`, { method: "DELETE" }, token);
-    await catalog.refresh();
+    try {
+      await apiFetch(`/meta/admin/subjects/${id}`, { method: "DELETE" }, token);
+      await catalog.refresh();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (
