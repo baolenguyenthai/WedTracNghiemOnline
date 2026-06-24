@@ -81,47 +81,50 @@ export async function generateQuestionsWithGemini(prompt: string): Promise<Gener
   };
 
   let lastError: Error | null = null;
+  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-1.5-pro", "gemini-1.5-flash-8b"]));
 
   for (const apiKey of apiKeys) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(requestBody)
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestBody)
+          }
+        );
+
+        const payload = (await response.json()) as {
+          candidates?: Array<{
+            content?: {
+              parts?: Array<{ text?: string }>;
+            };
+          }>;
+          error?: { message?: string };
+        };
+
+        if (!response.ok) {
+          throw new Error(payload.error?.message || `Gemini trả về HTTP ${response.status}.`);
         }
-      );
 
-      const payload = (await response.json()) as {
-        candidates?: Array<{
-          content?: {
-            parts?: Array<{ text?: string }>;
-          };
-        }>;
-        error?: { message?: string };
-      };
+        const text = payload.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const parsed = JSON.parse(extractJsonArray(text)) as unknown;
+        if (!Array.isArray(parsed)) {
+          throw new Error("AI trả về dữ liệu không hợp lệ.");
+        }
 
-      if (!response.ok) {
-        throw new Error(payload.error?.message || `Gemini trả về HTTP ${response.status}.`);
+        return parsed as GeneratedQuestion[];
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error(`Lỗi tạo đề với key ${apiKey.substring(0, 8)}... model ${model}:`, lastError.message);
       }
-
-      const text = payload.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const parsed = JSON.parse(extractJsonArray(text)) as unknown;
-      if (!Array.isArray(parsed)) {
-        throw new Error("AI trả về dữ liệu không hợp lệ.");
-      }
-
-      return parsed as GeneratedQuestion[];
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      console.error(`Lỗi tạo đề với key ${apiKey.substring(0, 8)}...:`, lastError.message);
     }
   }
 
-  throw lastError || new Error("Tất cả API keys đều không khả dụng.");
+  throw lastError || new Error("Tất cả API keys và models đều không khả dụng.");
 }
 
 export async function generateInsightReportWithGemini(statsData: string): Promise<string> {
