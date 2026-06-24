@@ -2209,16 +2209,13 @@ function AdminExamsSection({ token }: { token: string | null }) {
         {(loading || detailLoading) ? <LoadingState /> : null}
 
         <div className="stack scrollable-list">
-          <Table headers={["ID", "Học viên", "Bộ đề", "Điểm", "Kết quả", "Thời gian", "Trạng thái", "Ngày thi", ""]}>
+          <Table headers={["ID", "Học viên", "Điểm", "Kết quả", "Thời gian", "Trạng thái", "Ngày thi", ""]}>
             {exams.map(exam => (
               <tr key={exam.id} style={{ cursor: "pointer" }} onClick={() => void openDetail(exam.id)}>
                 <td style={{ opacity: 0.5, fontSize: "0.8rem" }}>#{exam.id}</td>
                 <td>
                   <strong style={{ fontSize: "0.85rem" }}>{exam.userName}</strong>
                   <div className="section-note">@{exam.username}</div>
-                </td>
-                <td style={{ fontSize: "0.85rem", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {exam.bankName}
                 </td>
                 <td>
                   <strong style={{ color: scoreColor(exam.score) }}>
