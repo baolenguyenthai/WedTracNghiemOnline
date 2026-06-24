@@ -13,6 +13,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().default("lenguyenthaib@gmail.com"),
   SMTP_PASS: z.string().default("pvvqqydujswlfwst"),
   SMTP_FROM: z.string().default('"Trắc Nghiệm Online" <lenguyenthaib@gmail.com>'),
+  RESEND_API_KEY: z.string().optional(),
   GEMINI_API_KEYS: z.string().optional(),
   GEMINI_MODEL: z.string().default("gemini-1.5-flash")
 });
