@@ -353,13 +353,13 @@ function ExploreSection({
                 Tạo bởi {bank.creator?.fullName || "N/A"}
               </div>
             </div>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/flashcard/${bank.id}`)}>
-                <span style={{ fontSize: "1.2rem", marginRight: "0.25rem" }}>🃏</span>
-                <span>Lật Flashcard</span>
+            <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/flashcard/${bank.id}`)} style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
+                <span style={{ fontSize: "0.9rem", marginRight: "0.25rem" }}>🃏</span>
+                <span>Flashcard</span>
               </Button>
-              <Button size="sm" onClick={() => navigate(`/exam/${bank.id}`)}>
-                <Play size={14} />
+              <Button size="sm" onClick={() => navigate(`/exam/${bank.id}`)} style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}>
+                <Play size={12} style={{ marginRight: "0.25rem" }} />
                 <span>Làm bài</span>
               </Button>
             </div>
