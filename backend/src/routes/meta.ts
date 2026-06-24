@@ -10,7 +10,8 @@ export const metaRouter = Router();
 metaRouter.get(
   "/grades",
   asyncHandler(async (_req, res) => {
-    const grades = await prisma.grade.findMany({ orderBy: { name: "asc" } });
+    const grades = await prisma.grade.findMany();
+    grades.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
     res.json(ok({ grades }));
   })
 );

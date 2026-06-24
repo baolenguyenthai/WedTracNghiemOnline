@@ -734,7 +734,7 @@ function UploadSection({
     prompt: ""
   });
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string>("");
+  const [generatedBank, setGeneratedBank] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -769,7 +769,7 @@ function UploadSection({
         throw new Error(json.message || "Tải lên thất bại.");
       }
       setMessage(`Đã gửi ${json.data.questionCount} câu hỏi để duyệt.`);
-      setPreview(JSON.stringify(json.data.bank, null, 2));
+      setGeneratedBank(json.data.bank);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải file.");
     } finally {
@@ -799,7 +799,7 @@ function UploadSection({
         })
       }, token);
       setMessage(`AI đã tạo ${response.data.questionCount} câu hỏi.`);
-      setPreview(JSON.stringify(response.data.bank, null, 2));
+      setGeneratedBank(response.data.bank);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tạo đề bằng AI.");
     } finally {
@@ -905,9 +905,43 @@ function UploadSection({
         </form>
       )}
 
-      {preview ? (
-        <Subsection title="Kết quả" subtitle="Thông tin bộ đề vừa tạo / tải lên.">
-          <pre style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: "0.8rem", color: "var(--text-secondary)", background: "var(--bg-surface)", padding: "0.75rem", borderRadius: "var(--radius-sm)" }}>{preview}</pre>
+      {generatedBank ? (
+        <Subsection title="Kết quả tạo bộ đề" subtitle="Danh sách câu hỏi và đáp án đã được tạo.">
+          <div style={{ marginBottom: "1rem" }}>
+            <strong>{generatedBank.name}</strong>
+            <p style={{ margin: 0, opacity: 0.8, fontSize: "0.9rem" }}>{generatedBank.description}</p>
+          </div>
+          <div className="stack" style={{ gap: "1rem" }}>
+            {generatedBank.questions?.map((q: any, i: number) => (
+              <div key={q.id || i} className="card stack" style={{ padding: "1.25rem", gap: "0.75rem", borderLeft: "4px solid var(--primary)" }}>
+                <h4 style={{ margin: 0, fontSize: "1rem", lineHeight: 1.5 }}>
+                  Câu {i + 1}: {q.content}
+                </h4>
+                <div style={{ display: "grid", gap: "0.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+                  {q.answers?.map((a: any, j: number) => (
+                    <div key={a.id || j} style={{
+                      padding: "0.75rem 1rem",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid",
+                      background: a.isCorrect ? "var(--success-muted)" : "var(--bg-surface)",
+                      borderColor: a.isCorrect ? "var(--success-border)" : "var(--border)",
+                      display: "flex",
+                      alignItems: "center"
+                    }}>
+                      <strong style={{ marginRight: "0.75rem", color: a.isCorrect ? "var(--success)" : "var(--text-secondary)" }}>
+                        {String.fromCharCode(65 + j)}.
+                      </strong>
+                      <span style={{ flex: 1, color: a.isCorrect ? "var(--success)" : "inherit" }}>{a.content}</span>
+                      {a.isCorrect && <Badge tone="success">Đúng</Badge>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {(!generatedBank.questions || generatedBank.questions.length === 0) && (
+              <div style={{ padding: "1rem", textAlign: "center", opacity: 0.6 }}>Chưa có câu hỏi nào được trả về.</div>
+            )}
+          </div>
         </Subsection>
       ) : null}
     </Section>

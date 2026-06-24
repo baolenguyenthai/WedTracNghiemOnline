@@ -85,7 +85,8 @@ export const questionUpdateSchema = questionCreateSchema.extend({
 export const examStartSchema = z.object({
   bankId: z.coerce.number().int().positive(),
   questionCount: z.coerce.number().int().positive().max(200).optional().nullable(),
-  durationMinutes: z.coerce.number().int().positive().max(600).optional().nullable()
+  durationMinutes: z.coerce.number().int().positive().max(600).optional().nullable(),
+  isReviewMode: z.boolean().optional()
 });
 
 export const examSubmitSchema = z.object({

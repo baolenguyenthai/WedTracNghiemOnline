@@ -1006,6 +1006,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-color: var(--danger-border);
   background: var(--danger-muted);
 }
+.choice-disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+.choice-disabled:hover {
+  background: var(--bg-surface);
+  border-color: var(--border);
+}
 
 /* Question index grid */
 .question-index-grid {
@@ -1089,12 +1097,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .workspace-shell,
   .auth-card,
   .exam-layout,
-  .split,
-  .section-grid.columns-2,
-  .section-grid.columns-3 {
-    grid-template-columns: 1fr;
-  }
-  .form-columns-2 {
+  .split {
     grid-template-columns: 1fr;
   }
 
@@ -1112,7 +1115,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
   }
   .sidebar-open { transform: translateX(0); }
   .sidebar-open ~ .mobile-overlay-active { display: block; }
-
   .mobile-overlay-show { display: block; }
 
   .workspace-topbar,
@@ -1122,17 +1124,40 @@ button, input, select, textarea { font: inherit; color: inherit; }
   }
 
   .mobile-only { display: inline-flex; }
-
   .auth-hero { display: none; }
   .auth-card { border-radius: var(--radius-lg); }
 
   .exam-sidebar {
     position: static;
     max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
   }
 }
 
+@media (max-width: 768px) {
+  html { font-size: 15px; }
+  
+  .section-grid.columns-2,
+  .section-grid.columns-3,
+  .form-columns-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .auth-layout { padding: 1rem; }
+  .auth-form { padding: 2rem 1.5rem; }
+  
+  .exam-sidebar, .exam-main { padding: 1rem; }
+  .workspace-topbar h1 { font-size: 1.35rem; }
+}
+
 @media (max-width: 640px) {
-  .workspace-topbar h1 { font-size: 1.25rem; }
-  .section-grid.columns-3 { grid-template-columns: 1fr; }
+  html { font-size: 14px; }
+  
+  .workspace-topbar h1 { font-size: 1.15rem; }
+  .auth-form { padding: 1.5rem 1.25rem; }
+  
+  .data-table th,
+  .data-table td { padding: 0.5rem; }
+  .data-table td { font-size: 0.8rem; }
 }

@@ -19,6 +19,7 @@ interface Room {
   currentQuestionIndex: number;
   questions: any[]; // The bank's questions
   questionStartTime: number;
+  questionTimer?: NodeJS.Timeout;
 }
 
 const rooms = new Map<string, Room>();
@@ -124,8 +125,17 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       // Nếu tất cả đã trả lời thì kết thúc câu hỏi sớm
       const allAnswered = Array.from(room.players.values()).every(p => p.hasAnsweredCurrent);
       if (allAnswered) {
+        if (room.questionTimer) {
+          clearTimeout(room.questionTimer);
+        }
         // Chờ 1s rồi qua câu tiếp theo
-        setTimeout(() => nextQuestion(room, io), 1000);
+        room.questionTimer = setTimeout(() => {
+          const currentRoom = rooms.get(roomId);
+          if (currentRoom && currentRoom.status === "PLAYING") {
+            nextQuestion(currentRoom, io);
+          }
+        }, 1000);
+        io.to(roomId).emit("roomUpdated", getRoomState(room));
       } else {
         io.to(roomId).emit("roomUpdated", getRoomState(room));
       }
@@ -153,21 +163,27 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
 }
 
 function startQuestion(room: Room, io: Server) {
+  if (room.questionTimer) {
+    clearTimeout(room.questionTimer);
+  }
+
   room.questionStartTime = Date.now();
   Array.from(room.players.values()).forEach(p => p.hasAnsweredCurrent = false);
   
+  const questionIndex = room.currentQuestionIndex;
+
   io.to(room.roomId).emit("questionStarted", {
-    questionIndex: room.currentQuestionIndex,
-    question: room.questions[room.currentQuestionIndex],
+    questionIndex,
+    question: room.questions[questionIndex],
     timeLimit: 60
   });
   
   io.to(room.roomId).emit("roomUpdated", getRoomState(room));
 
   // Tự động chuyển câu sau 60s
-  setTimeout(() => {
+  room.questionTimer = setTimeout(() => {
     const currentRoom = rooms.get(room.roomId);
-    if (currentRoom && currentRoom.status === "PLAYING" && currentRoom.currentQuestionIndex === room.currentQuestionIndex) {
+    if (currentRoom && currentRoom.status === "PLAYING" && currentRoom.currentQuestionIndex === questionIndex) {
       nextQuestion(currentRoom, io);
     }
   }, 60000);

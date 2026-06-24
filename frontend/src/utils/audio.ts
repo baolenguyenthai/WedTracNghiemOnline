@@ -119,3 +119,42 @@ export function playWin() {
     osc.stop(ctx.currentTime + i * 0.1 + 1);
   });
 }
+
+// ═══════════════════════════════════════════════
+// TEXT-TO-SPEECH
+// ═══════════════════════════════════════════════
+let currentUtterance: SpeechSynthesisUtterance | null = null;
+
+export function speakText(text: string, onEnd?: () => void) {
+  if (!("speechSynthesis" in window)) {
+    if (onEnd) onEnd();
+    return;
+  }
+  
+  stopSpeaking(); // Dừng nếu đang đọc dở
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "vi-VN"; // Tiếng Việt
+  // Chọn giọng nữ nếu có, nếu không fallback
+  const availableVoices = window.speechSynthesis.getVoices();
+  const femaleVoice = availableVoices.find(v => v.lang.startsWith("vi") && /female|woman|girl|nữ|cô|chị/i.test(v.name));
+  if (femaleVoice) utterance.voice = femaleVoice;
+  // Tốc độ nhanh, giọng cao hơn để giống voice review phim
+  utterance.rate = 1.6; // nhanh hơn (1.0 = chuẩn)
+  utterance.pitch = 1.3; // giọng cao hơn
+
+  
+  if (onEnd) {
+    utterance.onend = onEnd;
+    utterance.onerror = onEnd;
+  }
+
+  currentUtterance = utterance;
+  window.speechSynthesis.speak(utterance);
+}
+
+export function stopSpeaking() {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  currentUtterance = null;
+}

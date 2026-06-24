@@ -1,11 +1,11 @@
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Heart, ChevronLeft, ChevronRight, Clock3, TimerReset, ShieldCheck, CircleCheckBig, LoaderCircle, ArrowLeft, Trophy, Target, Timer } from "lucide-react";
+import { Heart, ChevronLeft, ChevronRight, Clock3, TimerReset, ShieldCheck, CircleCheckBig, LoaderCircle, ArrowLeft, Trophy, Target, Timer, Volume2, Square } from "lucide-react";
 import { apiFetch } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
 import confetti from "canvas-confetti";
-import { playTing, playTickTock, playWin } from "@/utils/audio";
+import { playTing, playTickTock, playWin, speakText, stopSpeaking } from "@/utils/audio";
 import { Badge, Button, EmptyState, Input, LoadingState, Section, Subsection } from "@/components/common";
 import { CommentSection } from "@/components/CommentSection";
 import type { BankSummary, ExamQuestion, ExamSession, Grade, Subject } from "@/types";
@@ -98,7 +98,9 @@ export function ExamPage() {
   const [error, setError] = useState<string | null>(null);
   const [favoriteState, setFavoriteState] = useState<Record<number, boolean>>({});
   const [isSurvivalMode, setIsSurvivalMode] = useState(false);
+  const [isReviewMode, setIsReviewMode] = useState(false);
   const [questionTimeLeft, setQuestionTimeLeft] = useState(15);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const autoSubmitRef = useRef(false);
 
   const currentQuestion = questions[currentIndex];
@@ -107,6 +109,29 @@ export function ExamPage() {
     if (!questions.length) return 0;
     return Math.round((Object.keys(answers).length / questions.length) * 100);
   }, [answers, questions.length]);
+
+  const toggleSpeak = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+    } else {
+      if (!currentQuestion) return;
+      setIsSpeaking(true);
+      const text = `Câu hỏi: ${currentQuestion.content}. ` + currentQuestion.answers.map((a, i) => `Đáp án ${String.fromCharCode(65 + i)}: ${a.content}`).join(". ");
+      speakText(text, () => setIsSpeaking(false));
+    }
+  };
+
+  useEffect(() => {
+    stopSpeaking();
+    setIsSpeaking(false);
+  }, [currentIndex]);
+
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
 
   const loadBank = async () => {
     if (!token || !bankId) return;
@@ -189,7 +214,8 @@ export function ExamPage() {
           questionCount: bank?.isPublic ? Number(questionCount) : undefined,
           durationMinutes: bank?.isPublic 
             ? (isSurvivalMode ? Math.ceil((Number(questionCount) * 15) / 60) : Number(durationMinutes))
-            : undefined
+            : undefined,
+          isReviewMode
         })
       }, token);
       setSession(response.data.exam);
@@ -365,6 +391,12 @@ export function ExamPage() {
                         Chế độ Sinh tồn (15s/câu)
                       </div>
                     </div>
+                  ) : isReviewMode ? (
+                    <div style={{ textAlign: "center", marginBottom: "1rem" }}>
+                      <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--success)", fontWeight: "bold" }}>
+                        📖 Chế độ Ôn tập
+                      </div>
+                    </div>
                   ) : (
                     <CircularTimer secondsLeft={secondsLeft} totalSeconds={totalDuration} />
                   )}
@@ -391,8 +423,12 @@ export function ExamPage() {
                   <Input value={durationMinutes} onChange={(event) => setDurationMinutes(event.target.value)} disabled={isSurvivalMode} />
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer", marginTop: "0.5rem" }}>
-                  <input type="checkbox" checked={isSurvivalMode} onChange={(e) => setIsSurvivalMode(e.target.checked)} />
+                  <input type="checkbox" checked={isSurvivalMode} onChange={(e) => { setIsSurvivalMode(e.target.checked); if (e.target.checked) setIsReviewMode(false); }} />
                   🔥 Bật Chế độ sinh tồn (15s/câu)
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", cursor: "pointer", marginTop: "0.5rem" }}>
+                  <input type="checkbox" checked={isReviewMode} onChange={(e) => { setIsReviewMode(e.target.checked); if (e.target.checked) setIsSurvivalMode(false); }} />
+                  📖 Bật Chế độ ôn tập (Hiện đáp án)
                 </label>
               </div>
             </Subsection>
@@ -435,27 +471,47 @@ export function ExamPage() {
             <EmptyState title="Sẵn sàng bắt đầu" description="Sau khi khởi tạo, bạn sẽ thấy câu hỏi, bộ đếm thời gian và điều hướng từng câu." />
           ) : currentQuestion ? (
             <div className="stack">
-              <div className="toolbar">
+              <div className="toolbar" style={{ justifyContent: "space-between" }}>
                 <Badge tone="primary">{currentQuestion.difficulty}</Badge>
+                <Button variant="ghost" size="sm" onClick={toggleSpeak} style={{ color: isSpeaking ? "var(--primary)" : "var(--text-secondary)" }}>
+                  {isSpeaking ? <Square size={14} fill="currentColor" /> : <Volume2 size={14} />}
+                  <span>{isSpeaking ? "Đang đọc" : "Đọc câu hỏi"}</span>
+                </Button>
               </div>
               <div className="question-card" style={{ border: "none", padding: 0, background: "transparent" }}>
                 <h4 style={{ fontSize: "1rem", lineHeight: 1.6 }}>{currentQuestion.content}</h4>
                 <div className="question-options" style={{ gap: "0.5rem" }}>
                   {currentQuestion.answers.map((answer, idx) => {
                     const active = selectedAnswerId === answer.id;
+                    const isReview = isReviewMode && selectedAnswerId !== null;
+                    const isCorrect = isReview && answer.isCorrect === true;
+                    const isWrongSelection = isReview && active && answer.isCorrect === false;
+
+                    let className = "choice";
+                    if (isReview) {
+                      if (isCorrect) className += " choice-correct";
+                      else if (isWrongSelection) className += " choice-wrong";
+                      else className += " choice-disabled";
+                    } else if (active) {
+                      className += " choice-active";
+                    }
+
                     return (
-                      <label key={answer.id} className={`choice ${active ? "choice-active" : ""}`}>
+                      <label key={answer.id} className={className}>
                         <input
                           type="radio"
                           name={`question-${currentQuestion.id}`}
                           checked={active}
+                          disabled={isReview}
                           onChange={() => {
-                            setAnswers((value) => ({ ...value, [currentQuestion.id]: answer.id }));
-                            playTing();
+                            if (!isReview) {
+                              setAnswers((value) => ({ ...value, [currentQuestion.id]: answer.id }));
+                              playTing();
+                            }
                           }}
                         />
                         <div>
-                          <strong style={{ color: active ? "var(--primary-hover)" : "var(--text-secondary)" }}>{String.fromCharCode(65 + idx)}.</strong>{" "}
+                          <strong style={{ color: active || isCorrect || isWrongSelection ? "inherit" : "var(--text-secondary)" }}>{String.fromCharCode(65 + idx)}.</strong>{" "}
                           {answer.content}
                         </div>
                       </label>

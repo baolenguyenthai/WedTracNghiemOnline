@@ -222,7 +222,8 @@ banksRouter.post(
               }
             }))
           }
-        }
+        },
+        include: { questions: { include: { answers: true } } }
       });
 
       return createdBank;
@@ -315,7 +316,8 @@ banksRouter.post(
               }
             }))
           }
-        }
+        },
+        include: { questions: { include: { answers: true } } }
       });
 
       return createdBank;

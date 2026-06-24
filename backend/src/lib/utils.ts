@@ -37,7 +37,8 @@ export function answerIndexFromLabel(label: string) {
 
 export function toExamScore(correctCount: number, totalQuestions: number) {
   if (totalQuestions <= 0) return 0;
-  return Math.round((correctCount / totalQuestions) * 1000) / 100;
+  // Trả về số nguyên (0-100)
+  return Math.round((correctCount / totalQuestions) * 100);
 }
 
 export function bankLabel(bank: {

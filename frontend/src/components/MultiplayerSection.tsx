@@ -168,9 +168,9 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             </div>
           )}
           
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+          <div className="section-grid columns-2">
             {/* Tham gia phòng */}
-            <div className="card stack" style={{ padding: "1.5rem" }}>
+            <div className="card stack" style={{ padding: "1.5rem", alignContent: "start" }}>
               <h3><Users size={18} style={{ verticalAlign: "middle", marginRight: 8 }}/> Tham gia phòng</h3>
               <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: "1rem" }}>Nhập mã phòng do bạn bè chia sẻ để bắt đầu.</p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -185,7 +185,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             </div>
 
             {/* Tạo phòng */}
-            <div className="card stack" style={{ padding: "1.5rem" }}>
+            <div className="card stack" style={{ padding: "1.5rem", alignContent: "start" }}>
               <h3><Crown size={18} style={{ verticalAlign: "middle", marginRight: 8 }}/> Tạo phòng mới</h3>
               <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: "1rem" }}>Chọn một bộ đề công khai để làm đề thi cho cả phòng.</p>
               <select 

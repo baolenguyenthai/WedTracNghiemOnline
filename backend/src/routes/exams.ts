@@ -109,7 +109,8 @@ examsRouter.post(
             answers: shuffle(
               question.answers.map((answer) => ({
                 id: answer.id,
-                content: answer.content
+                content: answer.content,
+                isCorrect: data.isReviewMode ? answer.isCorrect : undefined
               }))
             )
           }))

@@ -77,7 +77,7 @@ export interface ExamQuestion {
   id: number;
   content: string;
   difficulty: string;
-  answers: Array<{ id: number; content: string }>;
+  answers: Array<{ id: number; content: string; isCorrect?: boolean }>;
 }
 
 export interface ExamSession {
@@ -87,6 +87,7 @@ export interface ExamSession {
   startedAt: string;
   durationSeconds: number;
   publicAtStart: boolean;
+  isReviewMode?: boolean;
 }
 
 export interface LeaderboardRow {
