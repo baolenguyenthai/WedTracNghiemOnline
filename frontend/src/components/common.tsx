@@ -18,7 +18,10 @@ export function Button({
   type = "button",
   disabled,
   loading,
-  onClick
+  onClick,
+  className,
+  style,
+  fullWidth
 }: {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "ghost" | "danger";
