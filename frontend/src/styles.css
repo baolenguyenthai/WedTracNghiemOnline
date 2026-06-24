@@ -1184,6 +1184,28 @@ button, input, select, textarea { font: inherit; color: inherit; }
   will-change: transform;
 }
 
+.flashcard-inner.no-transition {
+  transition: none !important;
+}
+
+@keyframes flashcardSlideRight {
+  from { opacity: 0; transform: translateX(60px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes flashcardSlideLeft {
+  from { opacity: 0; transform: translateX(-60px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.flashcard-slide-right {
+  animation: flashcardSlideRight 0.25s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
+.flashcard-slide-left {
+  animation: flashcardSlideLeft 0.25s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+}
+
 .flashcard-container.flipped .flashcard-inner {
   transform: rotateY(180deg);
 }

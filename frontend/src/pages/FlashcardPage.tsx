@@ -29,6 +29,7 @@ export function FlashcardPage() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<"left" | "right" | "">("");
 
   useEffect(() => {
     async function loadQuestions() {
@@ -49,6 +50,7 @@ export function FlashcardPage() {
 
   const handleNext = useCallback(() => {
     if (currentIndex < questions.length - 1) {
+      setSlideDirection("right");
       setIsFlipped(false);
       setCurrentIndex((prev) => prev + 1);
     }
@@ -56,6 +58,7 @@ export function FlashcardPage() {
 
   const handlePrev = useCallback(() => {
     if (currentIndex > 0) {
+      setSlideDirection("left");
       setIsFlipped(false);
       setCurrentIndex((prev) => prev - 1);
     }
@@ -112,7 +115,11 @@ export function FlashcardPage() {
       </div>
 
       <div style={{ flexGrow: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <div className={`flashcard-container ${isFlipped ? "flipped" : ""}`} onClick={() => setIsFlipped(!isFlipped)}>
+        <div 
+          key={currentIndex}
+          className={`flashcard-container ${isFlipped ? "flipped" : ""} ${slideDirection ? `flashcard-slide-${slideDirection}` : ""}`} 
+          onClick={() => setIsFlipped(!isFlipped)}
+        >
           <div className="flashcard-inner">
             <div className="flashcard-front">
               <div className="flashcard-content">{currentQuestion.content}</div>
