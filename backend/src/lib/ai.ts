@@ -81,7 +81,7 @@ export async function generateQuestionsWithGemini(prompt: string): Promise<Gener
   };
 
   let lastError: Error | null = null;
-  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-1.5-pro"]));
+  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-2.0-flash", "gemini-2.5-flash"]));
 
   for (const apiKey of apiKeys) {
     for (const model of models) {
@@ -177,11 +177,13 @@ export async function generateInsightReportWithGemini(statsData: string): Promis
   };
 
   let lastError: Error | null = null;
+  const models = Array.from(new Set([env.GEMINI_MODEL, "gemini-2.0-flash", "gemini-2.5-flash"]));
 
   for (const apiKey of apiKeys) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: {
@@ -202,8 +204,10 @@ export async function generateInsightReportWithGemini(statsData: string): Promis
       }
 
       return text;
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error(`Lỗi tạo báo cáo với key ${apiKey.substring(0, 8)}... model ${model}:`, lastError.message);
+      }
     }
   }
 
