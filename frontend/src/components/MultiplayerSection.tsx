@@ -29,6 +29,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
   const [timeLimit, setTimeLimit] = useState(60);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [potentialScore, setPotentialScore] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -50,8 +51,6 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
     newSocket.on("roomUpdated", (state) => {
       setRoomState(state);
-      // Reset selected answer when a new question starts
-      setSelectedAnswer(null);
     });
 
     newSocket.on("questionStarted", (data) => {
@@ -60,6 +59,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
       setTimeLimit(data.timeLimit);
       setTimeLeft(data.timeLimit);
       setSelectedAnswer(null);
+      setPotentialScore(null);
     });
 
     newSocket.on("gameFinished", (state) => {
@@ -139,6 +139,11 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
   const submitAnswer = (answerId: number) => {
     if (!socket || !roomState || selectedAnswer) return;
     setSelectedAnswer(answerId);
+    
+    const maxTime = timeLimit * 1000;
+    const timeTaken = (timeLimit - timeLeft) * 1000;
+    const scoreEarned = Math.max(100, Math.floor(((maxTime - timeTaken) / maxTime) * 1000));
+    setPotentialScore(scoreEarned);
     
     // Play sound immediately when clicking
     // We don't know if it's correct yet until server resolves, so just a "Ting" for submission
@@ -326,6 +331,11 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
         {selectedAnswer && (
           <div style={{ textAlign: "center", marginTop: "2rem", fontSize: "1.2rem", fontWeight: "bold", color: "var(--text-secondary)" }}>
             Đã chọn đáp án. Đang chờ những người khác...
+            {potentialScore !== null && (
+              <div style={{ marginTop: "0.5rem", color: "var(--primary)" }}>
+                Nếu đúng, bạn sẽ được cộng +{potentialScore} điểm!
+              </div>
+            )}
           </div>
         )}
       </div>
