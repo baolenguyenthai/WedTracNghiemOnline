@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
+import { AppError } from "./http.js";
 
 function hasSmtpConfig() {
   return Boolean(env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASS && env.SMTP_FROM);
@@ -10,7 +11,7 @@ export async function sendOtpEmail(targetEmail: string, otp: string) {
     if (env.NODE_ENV !== "production") {
       return { mode: "dev", otp };
     }
-    throw new Error("Thiếu cấu hình SMTP. Hãy đặt SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS và SMTP_FROM.");
+    throw new AppError(500, "Hệ thống chưa được cấu hình Email (SMTP). Vui lòng thêm các biến môi trường SMTP trên Render.");
   }
 
   const transporter = nodemailer.createTransport({
