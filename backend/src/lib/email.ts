@@ -21,7 +21,10 @@ export async function sendOtpEmail(targetEmail: string, otp: string) {
     auth: {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS
-    }
+    },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 10000
   });
 
   await transporter.sendMail({
