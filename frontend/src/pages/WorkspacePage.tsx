@@ -2025,7 +2025,257 @@ type AdminExamRow = {
   durationSeconds: number | null;
 };
 
+type AdminExamDetail = AdminExamRow & {
+  items: Array<{
+    index: number;
+    questionId: number;
+    questionContent: string;
+    answers: Array<{ id: number; content: string; isCorrect: boolean }>;
+    selectedAnswerId: number | null;
+    selectedAnswerContent: string | null;
+    correctAnswerContent: string | null;
+    isCorrect: boolean | null;
+  }>;
+};
+
+function formatDur(seconds: number | null) {
+  if (!seconds) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m ${String(s).padStart(2, "0")}s`;
+}
+
 function AdminExamsSection({ token }: { token: string | null }) {
+  const [exams, setExams] = useState<AdminExamRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const [detail, setDetail] = useState<AdminExamDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const load = async (pg = page) => {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ page: String(pg), limit: "20" });
+      if (search.trim()) params.set("search", search.trim());
+      if (status) params.set("status", status);
+      const res = await apiFetch<{ exams: AdminExamRow[]; total: number; totalPages: number }>(`/admin/exams?${params.toString()}`, {}, token);
+      setExams(res.data.exams);
+      setTotal(res.data.total);
+      setTotalPages(res.data.totalPages);
+      setPage(pg);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void load(1); }, [token]);
+
+  const openDetail = async (id: number) => {
+    if (!token) return;
+    setDetailLoading(true);
+    try {
+      const res = await apiFetch<{ exam: AdminExamDetail }>(`/admin/exams/${id}`, {}, token);
+      setDetail(res.data.exam);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải chi tiết.");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const deleteExam = async (id: number) => {
+    if (!token || !confirm("Xóa bài thi này?")) return;
+    setDeleting(id);
+    try {
+      await apiFetch(`/admin/exams/${id}`, { method: "DELETE" }, token);
+      setExams(prev => prev.filter(e => e.id !== id));
+      setTotal(prev => prev - 1);
+      if (detail?.id === id) setDetail(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Xóa thất bại.");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const scoreColor = (score: number | null) => {
+    if (score === null) return "var(--text-tertiary)";
+    if (score >= 8) return "var(--success)";
+    if (score >= 5) return "var(--warning)";
+    return "var(--danger)";
+  };
+
+  return (
+    <>
+      {/* ── Modal chi tiết bài thi ── */}
+      {detail && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "2rem 1rem", overflowY: "auto" }}
+          onClick={e => { if (e.target === e.currentTarget) setDetail(null); }}
+        >
+          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "1.5rem", width: "100%", maxWidth: 720, position: "relative" }}>
+            <button onClick={() => setDetail(null)} style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
+
+            {/* Header */}
+            <div style={{ marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0 }}>Chi tiết bài thi #{detail.id}</h3>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                <span>👤 <strong>{detail.userName}</strong> (@{detail.username})</span>
+                <span>📚 {detail.bankName}</span>
+                <span>⏱ {formatDur(detail.durationSeconds)}</span>
+                <span style={{ color: scoreColor(detail.score), fontWeight: 700 }}>
+                  Điểm: {detail.score !== null ? `${Math.round(detail.score)}/10` : "—"}
+                </span>
+                <span>✅ {detail.correctCount}/{detail.totalQuestions} câu đúng</span>
+              </div>
+            </div>
+
+            {/* Câu hỏi */}
+            <div className="stack" style={{ gap: "0.75rem", maxHeight: "65vh", overflowY: "auto", paddingRight: "0.25rem" }}>
+              {detail.items.map(item => (
+                <div key={item.questionId} className="question-card" style={{ padding: "1rem" }}>
+                  <div className="toolbar" style={{ marginBottom: "0.5rem" }}>
+                    <Badge tone={item.isCorrect ? "success" : "danger"}>{item.isCorrect ? "✓ Đúng" : "✗ Sai"}</Badge>
+                    <Badge tone="neutral">Câu {item.index}</Badge>
+                  </div>
+                  <p style={{ margin: "0 0 0.75rem", fontWeight: 600, fontSize: "0.9rem", lineHeight: 1.5 }}>{item.questionContent}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                    {item.answers.map(ans => {
+                      const isSelected = ans.id === item.selectedAnswerId;
+                      const isCorrect = ans.isCorrect;
+                      let bg = "transparent";
+                      let color = "var(--text-secondary)";
+                      if (isCorrect) { bg = "rgba(16,185,129,0.12)"; color = "var(--success)"; }
+                      if (isSelected && !isCorrect) { bg = "rgba(239,68,68,0.12)"; color = "var(--danger)"; }
+                      return (
+                        <div key={ans.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0.6rem", borderRadius: "var(--radius-md)", background: bg, fontSize: "0.85rem" }}>
+                          <span style={{ color, fontWeight: isSelected || isCorrect ? 700 : 400 }}>
+                            {isSelected && !isCorrect ? "✗" : isCorrect ? "✓" : "○"}
+                          </span>
+                          <span style={{ color }}>{ans.content}</span>
+                          {isSelected && <Badge tone={isCorrect ? "success" : "danger"} style={{ marginLeft: "auto", fontSize: "0.7rem" }}>Đã chọn</Badge>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Section
+        title="Quản lý bài thi"
+        subtitle={`Tổng: ${total} bài thi`}
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => void load(1)} disabled={loading}>
+            <RefreshCcw size={14} />
+            <span>Tải lại</span>
+          </Button>
+        }
+      >
+        {/* Bộ lọc */}
+        <div className="toolbar" style={{ marginBottom: "0.75rem", gap: "0.5rem", flexWrap: "wrap" }}>
+          <Input
+            placeholder="Tìm theo họ tên, tên bộ đề..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && void load(1)}
+            style={{ maxWidth: 260 }}
+          />
+          <Select value={status} onChange={e => setStatus(e.target.value)} style={{ maxWidth: 160 }}>
+            <option value="">Tất cả</option>
+            <option value="submitted">Đã nộp</option>
+            <option value="ongoing">Đang thi</option>
+          </Select>
+          <Button size="sm" onClick={() => void load(1)} disabled={loading}>
+            <Search size={14} />
+            <span>Lọc</span>
+          </Button>
+        </div>
+
+        {error ? <div className="form-error">{error}</div> : null}
+        {(loading || detailLoading) ? <LoadingState /> : null}
+
+        <div className="stack scrollable-list">
+          <Table headers={["ID", "Học viên", "Bộ đề", "Điểm", "Kết quả", "Thời gian", "Trạng thái", "Ngày thi", ""]}>
+            {exams.map(exam => (
+              <tr key={exam.id} style={{ cursor: "pointer" }} onClick={() => void openDetail(exam.id)}>
+                <td style={{ opacity: 0.5, fontSize: "0.8rem" }}>#{exam.id}</td>
+                <td>
+                  <strong style={{ fontSize: "0.85rem" }}>{exam.userName}</strong>
+                  <div className="section-note">@{exam.username}</div>
+                </td>
+                <td style={{ fontSize: "0.85rem", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {exam.bankName}
+                </td>
+                <td>
+                  <strong style={{ color: scoreColor(exam.score) }}>
+                    {exam.score !== null ? `${Math.round(exam.score)}/10` : <span style={{ opacity: 0.4 }}>—</span>}
+                  </strong>
+                </td>
+                <td style={{ fontSize: "0.85rem" }}>
+                  {exam.correctCount !== null && exam.totalQuestions
+                    ? `${exam.correctCount}/${exam.totalQuestions}`
+                    : <span style={{ opacity: 0.4 }}>—</span>}
+                </td>
+                <td style={{ fontSize: "0.8rem", opacity: 0.7 }}>{formatDur(exam.durationSeconds)}</td>
+                <td>
+                  <Badge tone={exam.submittedAt ? "success" : "warning"}>
+                    {exam.submittedAt ? "Đã nộp" : "Đang thi"}
+                  </Badge>
+                </td>
+                <td style={{ fontSize: "0.75rem", opacity: 0.7 }}>
+                  {new Date(exam.createdAt).toLocaleDateString("vi-VN")}
+                </td>
+                <td onClick={e => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void deleteExam(exam.id)}
+                    disabled={deleting === exam.id}
+                    style={{ color: "var(--danger)" }}
+                  >
+                    {deleting === exam.id ? <LoaderCircle size={14} className="spin" /> : <Trash2 size={14} />}
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </Table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="toolbar" style={{ justifyContent: "center", marginTop: "1rem", gap: "0.5rem" }}>
+            <Button variant="secondary" size="sm" onClick={() => void load(page - 1)} disabled={page <= 1 || loading}>
+              ‹ Trước
+            </Button>
+            <span style={{ fontSize: "0.85rem", opacity: 0.7 }}>Trang {page}/{totalPages}</span>
+            <Button variant="secondary" size="sm" onClick={() => void load(page + 1)} disabled={page >= totalPages || loading}>
+              Tiếp ›
+            </Button>
+          </div>
+        )}
+
+        {!loading && !exams.length ? (
+          <EmptyState title="Không có bài thi nào" description="Thử thay đổi bộ lọc." />
+        ) : null}
+      </Section>
+    </>
+  );
+}
+
   const [exams, setExams] = useState<AdminExamRow[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);

@@ -931,3 +931,100 @@ adminRouter.delete(
     res.json(ok({ deleted: true }));
   })
 );
+
+// GET /admin/exams/:id - Chi tiết bài thi (câu hỏi + đáp án)
+adminRouter.get(
+  "/admin/exams/:id",
+  requireAuth,
+  requireRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    const id = Number(req.params.id);
+    const exam = await prisma.exam.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, fullName: true, username: true } },
+        bank: { select: { id: true, name: true } },
+        items: {
+          include: {
+            question: {
+              include: {
+                answers: { select: { id: true, content: true, isCorrect: true } }
+              }
+            },
+            selectedAnswer: { select: { id: true, content: true, isCorrect: true } }
+          }
+        }
+      }
+    });
+
+    if (!exam) throw new AppError(404, "Không tìm thấy bài thi.");
+
+    res.json(ok({
+      exam: {
+        id: exam.id,
+        userId: exam.userId,
+        userName: exam.user.fullName,
+        username: exam.user.username,
+        bankId: exam.bankId,
+        bankName: exam.bank.name,
+        score: exam.score,
+        totalQuestions: exam.totalQuestions,
+        correctCount: exam.correctCount,
+        submittedAt: exam.submittedAt,
+        createdAt: exam.createdAt,
+        durationSeconds: exam.durationSeconds,
+        items: exam.items.map((item, idx) => ({
+          index: idx + 1,
+          questionId: item.questionId,
+          questionContent: item.question.content,
+          answers: item.question.answers,
+          selectedAnswerId: item.selectedAnswerId,
+          selectedAnswerContent: item.selectedAnswer?.content ?? null,
+          correctAnswerContent: item.question.answers.find(a => a.isCorrect)?.content ?? null,
+          isCorrect: item.isCorrect
+        }))
+      }
+    }));
+  })
+);
+
+// GET /admin/users/:userId/exams - Lịch sử thi theo user
+adminRouter.get(
+  "/admin/users/:userId/exams",
+  requireAuth,
+  requireRole("ADMIN"),
+  asyncHandler(async (req, res) => {
+    const userId = Number(req.params.userId);
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = 20;
+
+    const [exams, total] = await Promise.all([
+      prisma.exam.findMany({
+        where: { userId },
+        include: {
+          bank: { select: { id: true, name: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      prisma.exam.count({ where: { userId } })
+    ]);
+
+    res.json(ok({
+      exams: exams.map(e => ({
+        id: e.id,
+        bankId: e.bankId,
+        bankName: e.bank.name,
+        score: e.score,
+        totalQuestions: e.totalQuestions,
+        correctCount: e.correctCount,
+        submittedAt: e.submittedAt,
+        createdAt: e.createdAt,
+        durationSeconds: e.durationSeconds
+      })),
+      total,
+      totalPages: Math.ceil(total / limit)
+    }));
+  })
+);
