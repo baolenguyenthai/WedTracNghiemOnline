@@ -35,19 +35,56 @@ export function WorkspaceLayout({
 
   useEffect(() => {
     const onFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsFullscreen(!!(
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (document as any).mozFullScreenElement || 
+        (document as any).msFullscreenElement
+      ));
     };
+    
     document.addEventListener("fullscreenchange", onFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+    document.addEventListener("mozfullscreenchange", onFullscreenChange);
+    document.addEventListener("MSFullscreenChange", onFullscreenChange);
+    
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", onFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", onFullscreenChange);
+    };
   }, []);
 
   const toggleTheme = () => setTheme((v) => (v === "dark" ? "light" : "dark"));
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => console.error(err));
+    const doc = document.documentElement as any;
+    const currentFullscreen = document.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+    if (!currentFullscreen) {
+      if (doc.requestFullscreen) {
+        doc.requestFullscreen().catch((err: any) => console.error(err));
+      } else if (doc.webkitRequestFullscreen) {
+        doc.webkitRequestFullscreen();
+      } else if (doc.mozRequestFullScreen) {
+        doc.mozRequestFullScreen();
+      } else if (doc.msRequestFullscreen) {
+        doc.msRequestFullscreen();
+      } else {
+        alert("Rất tiếc, trình duyệt trên thiết bị này (như Safari trên iPhone) chưa hỗ trợ mở toàn màn hình cho web.");
+      }
     } else {
-      document.exitFullscreen().catch(err => console.error(err));
+      const exitDoc = document as any;
+      if (exitDoc.exitFullscreen) {
+        exitDoc.exitFullscreen().catch((err: any) => console.error(err));
+      } else if (exitDoc.webkitExitFullscreen) {
+        exitDoc.webkitExitFullscreen();
+      } else if (exitDoc.mozCancelFullScreen) {
+        exitDoc.mozCancelFullScreen();
+      } else if (exitDoc.msExitFullscreen) {
+        exitDoc.msExitFullscreen();
+      }
     }
   };
 
