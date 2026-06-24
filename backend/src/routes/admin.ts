@@ -856,9 +856,9 @@ adminRouter.get(
 // ADMIN EXAMS MANAGEMENT
 // ═══════════════════════════════════════════════
 
-// GET /admin/exams - Danh sách bài thi
+// GET /exams - Danh sách bài thi
 adminRouter.get(
-  "/admin/exams",
+  "/exams",
   requireAuth,
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
@@ -922,9 +922,9 @@ adminRouter.get(
   })
 );
 
-// DELETE /admin/exams/:id - Xóa bài thi
+// DELETE /exams/:id - Xóa bài thi
 adminRouter.delete(
-  "/admin/exams/:id",
+  "/exams/:id",
   requireAuth,
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
@@ -937,9 +937,9 @@ adminRouter.delete(
   })
 );
 
-// GET /admin/exams/:id - Chi tiết bài thi (câu hỏi + đáp án)
+// GET /exams/:id - Chi tiết bài thi (câu hỏi + đáp án)
 adminRouter.get(
-  "/admin/exams/:id",
+  "/exams/:id",
   requireAuth,
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
@@ -1012,9 +1012,9 @@ adminRouter.get(
   })
 );
 
-// GET /admin/users/:userId/exams - Lịch sử thi theo user
+// GET /users/:userId/exams - Lịch sử thi theo user
 adminRouter.get(
-  "/admin/users/:userId/exams",
+  "/users/:userId/exams",
   requireAuth,
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
