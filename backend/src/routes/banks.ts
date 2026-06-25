@@ -9,6 +9,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { parseImportedQuestions } from "../lib/import-export.js";
 import { generateQuestionsWithGemini } from "../lib/ai.js";
 import { mapDifficulty } from "../lib/utils.js";
+import { createRequire } from "node:module";
 
 export const banksRouter = Router();
 const upload = multer({
@@ -339,11 +340,12 @@ banksRouter.post(
       
       if (mime === "application/pdf") {
         try {
-          const pdfParseModule = (await import("pdf-parse")) as any;
-          const pdfParse = pdfParseModule.default || pdfParseModule;
+          const require = createRequire(import.meta.url);
+          const pdfParse = require("pdf-parse");
           const pdfData = await pdfParse(buffer);
           fileContent = pdfData.text;
-        } catch {
+        } catch (err) {
+          console.error("PDF Parsing Error:", err);
           throw new AppError(400, "Không thể đọc file PDF. Vui lòng thử file khác.");
         }
       } else if (
