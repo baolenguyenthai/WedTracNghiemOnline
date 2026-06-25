@@ -1120,6 +1120,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
     width: min(85vw, 280px);
     background: var(--bg-base);
     border-right: 1px solid var(--border);
+    padding-top: 4rem;
   }
   .sidebar-open { transform: translateX(0); }
   .sidebar-open ~ .mobile-overlay-active { display: block; }
