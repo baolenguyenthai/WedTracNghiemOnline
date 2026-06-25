@@ -190,7 +190,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             <div className="card stack" style={{ padding: "1.5rem", alignContent: "start" }}>
               <h3><Users size={18} style={{ verticalAlign: "middle", marginRight: 8 }}/> Tham gia phòng</h3>
               <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: "1rem" }}>Nhập mã phòng do bạn bè chia sẻ để bắt đầu.</p>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <Input 
                   placeholder="Nhập mã phòng (vd: ABCDEF)" 
                   value={roomIdInput} 
