@@ -794,6 +794,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Workspace main */
 .workspace-main { min-width: 0; }
 
+.admin-actions-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  background: var(--bg-glass);
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+.admin-actions-toolbar .btn-ai {
+  margin-left: auto;
+}
+
 .workspace-topbar {
   display: flex;
   align-items: center;
@@ -1107,33 +1121,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .exam-layout,
   .split {
     grid-template-columns: 1fr;
-  }
-
-  .admin-actions-toolbar {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    background: var(--bg-glass);
-    padding: 0.75rem;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border);
-  }
-  .admin-actions-toolbar .btn-ai {
-    margin-left: auto;
-  }
-
-  @media (max-width: 768px) {
-    .admin-actions-toolbar {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
-    .admin-actions-toolbar .btn-action {
-      width: 100%;
-    }
-    .admin-actions-toolbar .btn-ai {
-      margin-left: 0;
-      grid-column: 1 / -1;
-    }
   }
 
   .sidebar {
