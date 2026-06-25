@@ -811,7 +811,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .admin-actions-toolbar {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   align-items: center;
   background: var(--bg-glass);
   padding: 0.75rem;
