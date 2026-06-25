@@ -15,7 +15,12 @@ const envSchema = z.object({
   SMTP_FROM: z.string().default('"Trắc Nghiệm Online" <lenguyenthaib@gmail.com>'),
   RESEND_API_KEY: z.string().optional(),
   GEMINI_API_KEYS: z.string().optional(),
-  GEMINI_MODEL: z.string().default("gemini-1.5-flash")
+  GEMINI_MODEL: z.string().default("gemini-1.5-flash"),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().optional()
 });
 
 export const env = envSchema.parse(process.env);

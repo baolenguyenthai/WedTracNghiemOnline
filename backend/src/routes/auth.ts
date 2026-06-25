@@ -8,17 +8,24 @@ import { sendOtpEmail } from "../lib/email.js";
 import { clearPasswordResetToken, setPasswordResetToken, verifyPasswordResetToken } from "../lib/password-reset.js";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { env } from "../config/env.js";
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/avatars/");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-const upload = multer({ storage: storage });
+const upload = multer({ storage: multer.memoryStorage() });
+
+let s3Client: S3Client | null = null;
+if (env.R2_ACCOUNT_ID && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY) {
+  s3Client = new S3Client({
+    region: "auto",
+    endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: env.R2_ACCESS_KEY_ID,
+      secretAccessKey: env.R2_SECRET_ACCESS_KEY
+    }
+  });
+}
+
 
 export const authRouter = Router();
 
@@ -160,7 +167,26 @@ authRouter.post(
       throw new AppError(404, "Không tìm thấy người dùng.");
     }
 
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const filename = req.file.fieldname + "-" + uniqueSuffix + path.extname(req.file.originalname);
+    let avatarUrl = "";
+
+    if (s3Client && env.R2_BUCKET_NAME && env.R2_PUBLIC_URL) {
+      // Upload to R2
+      await s3Client.send(new PutObjectCommand({
+        Bucket: env.R2_BUCKET_NAME,
+        Key: filename,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      }));
+      avatarUrl = `${env.R2_PUBLIC_URL.replace(/\/$/, '')}/${filename}`;
+    } else {
+      // Fallback to local
+      const dest = path.join("uploads", "avatars", filename);
+      fs.writeFileSync(dest, req.file.buffer);
+      avatarUrl = `/uploads/avatars/${filename}`;
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: { avatarUrl },

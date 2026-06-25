@@ -1339,7 +1339,7 @@ function ProfileSection({
           title="Bấm để tải ảnh đại diện"
         >
           {user?.avatarUrl ? (
-            <img src={`${getApiBase().replace('/api', '')}${user.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${getApiBase().replace('/api', '')}${user.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
             userInitial
           )}
