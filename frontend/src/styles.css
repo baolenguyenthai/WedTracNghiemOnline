@@ -1157,6 +1157,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
   
   .exam-sidebar, .exam-main { padding: 1rem; }
   .workspace-topbar h1 { font-size: 1.35rem; }
+
+  .workspace-topbar {
+    flex-wrap: wrap;
+  }
+  .workspace-topbar .toolbar {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 640px) {

@@ -1879,6 +1879,9 @@ function AdminBanksSection({
     await loadBanks();
   };
 
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+
   const saveBank = async () => {
     if (!token || !selectedBank) return;
     await apiFetch(`/admin/banks/${selectedBank.id}`, {
@@ -1894,6 +1897,7 @@ function AdminBanksSection({
         defaultDurationMinutes: selectedBank.defaultDurationMinutes
       })
     }, token);
+    setIsBankModalOpen(false);
     await loadBanks();
   };
 
@@ -1951,6 +1955,7 @@ function AdminBanksSection({
       difficulty: question.difficulty,
       answers
     });
+    setIsQuestionModalOpen(true);
   };
 
   const clearQuestionForm = () => {
@@ -1965,6 +1970,7 @@ function AdminBanksSection({
         { content: "", isCorrect: false }
       ]
     });
+    setIsQuestionModalOpen(true);
   };
 
   const saveQuestion = async () => {
@@ -1979,7 +1985,7 @@ function AdminBanksSection({
     } else {
       await apiFetch(`/admin/banks/${selectedBank.id}/questions`, { method: "POST", body: JSON.stringify(body) }, token);
     }
-    clearQuestionForm();
+    setIsQuestionModalOpen(false);
     await loadDetail(selectedBank.id);
     await loadBanks();
   };
@@ -2091,71 +2097,30 @@ function AdminBanksSection({
           {detailLoading ? <LoadingState /> : null}
           {selectedBank ? (
             <div className="stack">
-              <div className="toolbar" style={{ gap: "0.35rem", flexWrap: "wrap" }}>
-                <Input value={selectedBank.name} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, name: event.target.value }) : value)} style={{ maxWidth: 200 }} />
-                <Button variant="secondary" size="sm" onClick={saveBank}><Save size={13} /><span>Lưu</span></Button>
-                <Button variant="secondary" size="sm" onClick={() => approveBank("DA_DUYET")}><CheckCircle2 size={13} /><span>Duyệt</span></Button>
-                <Button variant="secondary" size="sm" onClick={() => togglePublic(!selectedBank.isPublic)}><ShieldCheck size={13} /><span>{selectedBank.isPublic ? "Ẩn" : "Công khai"}</span></Button>
-                <Button variant="danger" size="sm" onClick={removeBank}><Trash2 size={13} /></Button>
-                <div style={{ marginLeft: "auto" }}>
-                  <Button variant="primary" size="sm" onClick={generateInsight} disabled={insightLoading}>
+              <div className="admin-actions-toolbar" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", background: "var(--bg-glass)", padding: "0.75rem", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", flex: 1 }}>
+                  <Button variant="secondary" size="sm" onClick={() => setIsBankModalOpen(true)}>
+                    <Edit3 size={13} /><span>Sửa</span>
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => approveBank("DA_DUYET")}>
+                    <CheckCircle2 size={13} /><span>Duyệt</span>
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => togglePublic(!selectedBank.isPublic)}>
+                    <ShieldCheck size={13} /><span>{selectedBank.isPublic ? "Ẩn" : "Công khai"}</span>
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={removeBank}>
+                    <Trash2 size={13} /><span>Xóa</span>
+                  </Button>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", flex: window.innerWidth <= 640 ? "100%" : "auto" }}>
+                  <Button variant="primary" size="sm" onClick={generateInsight} disabled={insightLoading} style={{ width: window.innerWidth <= 640 ? "100%" : "auto", justifyContent: "center" }}>
                     {insightLoading ? <LoaderCircle size={13} className="spin" /> : <Sparkles size={13} />}
                     <span>AI Phân tích</span>
                   </Button>
                 </div>
               </div>
-              <div className="form-grid form-columns-2">
-                <label className="field-group"><span>Mô tả</span><Textarea value={selectedBank.description || ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, description: event.target.value }) : value)} /></label>
-                <div className="stack">
-                  <label className="field-group">
-                    <span>Cấp học</span>
-                    <Select
-                      value={selectedBank.grade?.id || ""}
-                      onChange={(event) =>
-                        setSelectedBank((value) => {
-                          if (!value || !event.target.value) return value;
-                          const nextId = Number(event.target.value);
-                          return {
-                            ...value,
-                            grade: {
-                              id: nextId,
-                              name: catalog.grades.find((grade) => grade.id === nextId)?.name || value.grade.name
-                            }
-                          };
-                        })
-                      }
-                    >
-                      <option value="">Chọn</option>
-                      {catalog.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
-                    </Select>
-                  </label>
-                  <label className="field-group">
-                    <span>Môn học</span>
-                    <Select
-                      value={selectedBank.subject?.id || ""}
-                      onChange={(event) =>
-                        setSelectedBank((value) => {
-                          if (!value || !event.target.value) return value;
-                          const nextId = Number(event.target.value);
-                          return {
-                            ...value,
-                            subject: {
-                              id: nextId,
-                              name: catalog.subjects.find((subject) => subject.id === nextId)?.name || value.subject.name
-                            }
-                          };
-                        })
-                      }
-                    >
-                      <option value="">Chọn</option>
-                      {catalog.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
-                    </Select>
-                  </label>
-                </div>
-                <label className="field-group"><span>Số câu mặc định</span><Input value={selectedBank.defaultQuestionCount ?? ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, defaultQuestionCount: Number(event.target.value) || null }) : value)} /></label>
-                <label className="field-group"><span>Thời gian mặc định</span><Input value={selectedBank.defaultDurationMinutes ?? ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, defaultDurationMinutes: Number(event.target.value) || null }) : value)} /></label>
-              </div>
-              <div className="toolbar gap-sm">
+              
+              <div className="toolbar gap-sm" style={{ marginTop: "1rem" }}>
                 <Button variant="secondary" size="sm" onClick={() => void downloadFile(token, `/admin/banks/${selectedBank.id}/export/docx`, `${selectedBank.name}.docx`)}>
                   <FileDown size={13} />
                   <span>Word</span>
@@ -2163,6 +2128,10 @@ function AdminBanksSection({
                 <Button variant="secondary" size="sm" onClick={() => void downloadFile(token, `/admin/banks/${selectedBank.id}/export/xlsx`, `${selectedBank.name}.xlsx`)}>
                   <Download size={13} />
                   <span>Excel</span>
+                </Button>
+                <Button variant="primary" size="sm" onClick={clearQuestionForm} style={{ marginLeft: "auto" }}>
+                  <Plus size={13} />
+                  <span>Thêm câu hỏi</span>
                 </Button>
               </div>
 
@@ -2207,34 +2176,75 @@ function AdminBanksSection({
                   </div>
                 ))}
               </div>
-
-              {/* Question form */}
-              <Subsection
-                title={editingQuestionId ? "Sửa câu hỏi" : "Thêm câu hỏi"}
-                subtitle="Trắc nghiệm 4 lựa chọn, 1 đáp án đúng."
-                actions={editingQuestionId ? <Button variant="ghost" size="sm" onClick={clearQuestionForm}><X size={13} /><span>Hủy</span></Button> : null}
-              >
-                <div className="stack">
-                  <label className="field-group"><span>Nội dung</span><Textarea value={questionForm.content} onChange={(event) => setQuestionForm((value) => ({ ...value, content: event.target.value }))} /></label>
-                  <label className="field-group"><span>Mức độ</span><Select value={questionForm.difficulty} onChange={(event) => setQuestionForm((value) => ({ ...value, difficulty: event.target.value }))}><option value="DE">Dễ</option><option value="TB">Trung bình</option><option value="KHO">Khó</option></Select></label>
-                  <div className="question-options">
-                    {questionForm.answers.map((answer, idx) => (
-                      <div key={idx} className="question-option" style={{ alignItems: "center" }}>
-                        <strong>{String.fromCharCode(65 + idx)}</strong>
-                        <Input value={answer.content} onChange={(event) => setQuestionForm((value) => ({ ...value, answers: value.answers.map((item, index) => index === idx ? { ...item, content: event.target.value } : item) }))} style={{ flex: 1 }} />
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: answer.isCorrect ? "var(--success)" : "var(--text-tertiary)", whiteSpace: "nowrap" }}>
-                          <input type="radio" name="correct-answer" checked={answer.isCorrect} onChange={() => setQuestionForm((value) => ({ ...value, answers: value.answers.map((item, index) => ({ ...item, isCorrect: index === idx })) }))} style={{ accentColor: "var(--success)" }} />
-                          Đúng
+              {/* Modals */}
+              {isBankModalOpen && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "2rem 1rem", overflowY: "auto" }} onClick={(e) => e.target === e.currentTarget && setIsBankModalOpen(false)}>
+                  <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 600, border: "1px solid var(--border)" }}>
+                    <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>Sửa thông tin bộ đề</h3>
+                    <div className="stack" style={{ gap: "1rem" }}>
+                      <label className="field-group"><span>Tên bộ đề</span><Input value={selectedBank.name} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, name: event.target.value }) : value)} /></label>
+                      <label className="field-group"><span>Mô tả</span><Textarea value={selectedBank.description || ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, description: event.target.value }) : value)} /></label>
+                      <div className="form-grid form-columns-2">
+                        <label className="field-group">
+                          <span>Cấp học</span>
+                          <Select value={selectedBank.grade?.id || ""} onChange={(event) => setSelectedBank((value) => { if (!value || !event.target.value) return value; const nextId = Number(event.target.value); return { ...value, grade: { id: nextId, name: catalog.grades.find((grade) => grade.id === nextId)?.name || value.grade?.name || "" } }; })}>
+                            <option value="">Chọn</option>
+                            {catalog.grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
+                          </Select>
+                        </label>
+                        <label className="field-group">
+                          <span>Môn học</span>
+                          <Select value={selectedBank.subject?.id || ""} onChange={(event) => setSelectedBank((value) => { if (!value || !event.target.value) return value; const nextId = Number(event.target.value); return { ...value, subject: { id: nextId, name: catalog.subjects.find((subject) => subject.id === nextId)?.name || value.subject?.name || "" } }; })}>
+                            <option value="">Chọn</option>
+                            {catalog.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
+                          </Select>
                         </label>
                       </div>
-                    ))}
+                      <div className="form-grid form-columns-2">
+                        <label className="field-group"><span>Số câu mặc định</span><Input value={selectedBank.defaultQuestionCount ?? ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, defaultQuestionCount: Number(event.target.value) || null }) : value)} /></label>
+                        <label className="field-group"><span>Thời gian mặc định</span><Input value={selectedBank.defaultDurationMinutes ?? ""} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, defaultDurationMinutes: Number(event.target.value) || null }) : value)} /></label>
+                      </div>
+                      <div className="toolbar" style={{ justifyContent: "flex-end", gap: "1rem", marginTop: "1rem" }}>
+                        <Button variant="secondary" onClick={() => setIsBankModalOpen(false)}>Hủy</Button>
+                        <Button onClick={saveBank}><Save size={14}/><span>Lưu thay đổi</span></Button>
+                      </div>
+                    </div>
                   </div>
-                  <Button size="sm" onClick={saveQuestion}>
-                    <SaveAll size={14} />
-                    <span>{editingQuestionId ? "Lưu câu hỏi" : "Thêm câu hỏi"}</span>
-                  </Button>
                 </div>
-              </Subsection>
+              )}
+
+              {isQuestionModalOpen && (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "2rem 1rem", overflowY: "auto" }} onClick={(e) => e.target === e.currentTarget && setIsQuestionModalOpen(false)}>
+                  <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 600, border: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                      <h3 style={{ margin: 0 }}>{editingQuestionId ? "Sửa câu hỏi" : "Thêm câu hỏi"}</h3>
+                      <button onClick={() => setIsQuestionModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}><X size={20}/></button>
+                    </div>
+                    <div className="stack" style={{ gap: "1rem" }}>
+                      <label className="field-group"><span>Nội dung</span><Textarea value={questionForm.content} onChange={(event) => setQuestionForm((value) => ({ ...value, content: event.target.value }))} /></label>
+                      <label className="field-group"><span>Mức độ</span><Select value={questionForm.difficulty} onChange={(event) => setQuestionForm((value) => ({ ...value, difficulty: event.target.value }))}><option value="DE">Dễ</option><option value="TB">Trung bình</option><option value="KHO">Khó</option></Select></label>
+                      <div className="question-options">
+                        {questionForm.answers.map((answer, idx) => (
+                          <div key={idx} className="question-option" style={{ alignItems: "center" }}>
+                            <strong>{String.fromCharCode(65 + idx)}</strong>
+                            <Input value={answer.content} onChange={(event) => setQuestionForm((value) => ({ ...value, answers: value.answers.map((item, index) => index === idx ? { ...item, content: event.target.value } : item) }))} style={{ flex: 1 }} />
+                            <label style={{ display: "flex", alignItems: "center", gap: "0.35rem", cursor: "pointer", fontSize: "0.8rem", fontWeight: 600, color: answer.isCorrect ? "var(--success)" : "var(--text-tertiary)", whiteSpace: "nowrap" }}>
+                              <input type="radio" name="correct-answer" checked={answer.isCorrect} onChange={() => setQuestionForm((value) => ({ ...value, answers: value.answers.map((item, index) => ({ ...item, isCorrect: index === idx })) }))} style={{ accentColor: "var(--success)" }} />
+                              Đúng
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="toolbar" style={{ justifyContent: "flex-end", marginTop: "1rem" }}>
+                        <Button size="sm" onClick={saveQuestion}>
+                          <SaveAll size={14} />
+                          <span>{editingQuestionId ? "Lưu câu hỏi" : "Thêm câu hỏi"}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <EmptyState title="Chọn một bộ đề để chỉnh sửa" />
