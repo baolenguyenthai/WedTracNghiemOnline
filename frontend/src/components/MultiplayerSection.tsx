@@ -262,15 +262,15 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
           
           <div style={{ marginTop: "2rem" }}>
             {isHost ? (
-              <div className="stack" style={{ alignItems: "center" }}>
-                <QRCodeSVG value={`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`} size={160} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+                <QRCodeSVG value={`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`} size={160} style={{ margin: "0 auto" }} />
                 <Button variant="ghost" size="sm" onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`);
                   alert("Đã copy link chia sẻ!");
                 }}>
                   Copy Link Tham Gia
                 </Button>
-                <div style={{ marginTop: "1rem" }}>
+                <div>
                   <Button onClick={startGame} disabled={roomState.players.length < 1}>
                     <Play size={18} /> BẮT ĐẦU TRẬN ĐẤU
                   </Button>
