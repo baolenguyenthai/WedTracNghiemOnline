@@ -2102,20 +2102,20 @@ function AdminBanksSection({
           {detailLoading ? <LoadingState /> : null}
           {selectedBank ? (
             <div className="stack">
-              <div className="admin-actions-toolbar" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", background: "var(--bg-glass)", padding: "0.75rem", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
-                <Button variant="secondary" size="sm" onClick={() => setIsBankModalOpen(true)}>
+              <div className="admin-actions-toolbar">
+                <Button variant="secondary" size="sm" className="btn-action" onClick={() => setIsBankModalOpen(true)}>
                   <Edit3 size={13} /><span>Sửa</span>
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => approveBank("DA_DUYET")}>
+                <Button variant="secondary" size="sm" className="btn-action" onClick={() => approveBank("DA_DUYET")}>
                   <CheckCircle2 size={13} /><span>Duyệt</span>
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => togglePublic(!selectedBank.isPublic)}>
+                <Button variant="secondary" size="sm" className="btn-action" onClick={() => togglePublic(!selectedBank.isPublic)}>
                   <ShieldCheck size={13} /><span>{selectedBank.isPublic ? "Ẩn" : "Công khai"}</span>
                 </Button>
-                <Button variant="danger" size="sm" onClick={removeBank}>
+                <Button variant="danger" size="sm" className="btn-action" onClick={removeBank}>
                   <Trash2 size={13} /><span>Xóa</span>
                 </Button>
-                <Button variant="primary" size="sm" onClick={generateInsight} disabled={insightLoading} style={{ marginLeft: "auto" }}>
+                <Button variant="primary" size="sm" className="btn-action btn-ai" onClick={generateInsight} disabled={insightLoading}>
                   {insightLoading ? <LoaderCircle size={13} className="spin" /> : <Sparkles size={13} />}
                   <span>AI Phân tích</span>
                 </Button>

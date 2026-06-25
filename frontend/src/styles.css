@@ -1109,6 +1109,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
     grid-template-columns: 1fr;
   }
 
+  .admin-actions-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+    background: var(--bg-glass);
+    padding: 0.75rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+  }
+  .admin-actions-toolbar .btn-ai {
+    margin-left: auto;
+  }
+
   .sidebar {
     position: fixed;
     left: 0;
@@ -1196,6 +1210,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
   
   .auth-form { padding: 1.5rem 1.25rem; }
   
+  .admin-actions-toolbar .btn-action {
+    flex: 1 1 calc(50% - 0.5rem);
+    justify-content: center;
+  }
+
   .data-table th,
   .data-table td { padding: 0.5rem; }
   .data-table td { font-size: 0.8rem; }
