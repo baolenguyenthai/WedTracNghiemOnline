@@ -344,6 +344,8 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
   // 4. Giao diện kết thúc FINISHED
   if (roomState.status === "FINISHED") {
+    const myPlayer = roomState.players.find((p: any) => p.id === socket?.id);
+
     return (
       <Section title="Kết quả trận đấu" subtitle="Bảng xếp hạng chung cuộc">
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
@@ -351,7 +353,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
           <h1>Trận đấu kết thúc!</h1>
         </div>
 
-        <div className="card">
+        <div className="card" style={{ marginBottom: "2rem" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)" }}>
@@ -377,6 +379,51 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             </tbody>
           </table>
         </div>
+
+        {roomState.questions && (
+          <div className="card">
+            <h3>Xem lại câu hỏi</h3>
+            <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: "1.5rem" }}>
+              Danh sách đáp án bạn đã chọn so với đáp án đúng.
+            </p>
+            <div className="stack" style={{ gap: "1.5rem" }}>
+              {roomState.questions.map((q: any, i: number) => {
+                const myAnswerId = myPlayer?.answers?.[i];
+                return (
+                  <div key={q.id} style={{ background: "var(--bg)", padding: "1.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                    <div style={{ fontWeight: "bold", marginBottom: "1rem", fontSize: "1.1rem" }}>Câu {i + 1}: {q.content}</div>
+                    <div className="stack" style={{ gap: "0.5rem" }}>
+                      {q.answers.map((ans: any) => {
+                        const isCorrect = ans.isCorrect;
+                        const isMySelection = ans.id === myAnswerId;
+                        let bg = "var(--bg-surface)";
+                        let border = "1px solid var(--border)";
+                        let icon = null;
+                        
+                        if (isCorrect) {
+                          bg = "rgba(34,197,94,0.1)";
+                          border = "1px solid var(--success)";
+                          icon = <span style={{ color: "var(--success)", fontWeight: "bold" }}>✔️ Đáp án đúng{isMySelection && " (Bạn chọn)"}</span>;
+                        } else if (isMySelection) {
+                          bg = "rgba(239,68,68,0.1)";
+                          border = "1px solid var(--danger)";
+                          icon = <span style={{ color: "var(--danger)", fontWeight: "bold" }}>❌ Bạn chọn sai</span>;
+                        }
+
+                        return (
+                          <div key={ans.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem", borderRadius: "var(--radius)", background: bg, border }}>
+                            <span>{ans.content}</span>
+                            {icon}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div style={{ textAlign: "center", marginTop: "2rem" }}>
           <Button onClick={leaveRoom}>Rời phòng</Button>

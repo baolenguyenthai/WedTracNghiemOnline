@@ -8,6 +8,7 @@ interface Player {
   score: number;
   isReady: boolean;
   hasAnsweredCurrent: boolean;
+  answers: Record<number, number>;
 }
 
 interface Room {
@@ -56,7 +57,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         fullName: user.fullName,
         score: 0,
         isReady: true,
-        hasAnsweredCurrent: false
+        hasAnsweredCurrent: false,
+        answers: {}
       });
 
       rooms.set(roomId, newRoom);
@@ -85,7 +87,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         fullName: user.fullName,
         score: 0,
         isReady: true,
-        hasAnsweredCurrent: false
+        hasAnsweredCurrent: false,
+        answers: {}
       });
 
       io.to(roomId).emit("roomUpdated", getRoomState(room));
@@ -111,6 +114,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
 
       const currentQuestion = room.questions[room.currentQuestionIndex];
       const correctAnswer = currentQuestion.answers.find((a: any) => a.isCorrect);
+      
+      player.answers[room.currentQuestionIndex] = answerId;
       
       if (correctAnswer && correctAnswer.id === answerId) {
         // Tính điểm: Trả lời càng nhanh điểm càng cao (Tối đa 1000đ)
@@ -206,6 +211,7 @@ function getRoomState(room: Room) {
     status: room.status,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
+    questions: room.status === "FINISHED" ? room.questions : undefined,
     players: Array.from(room.players.values()).sort((a, b) => b.score - a.score)
   };
 }
