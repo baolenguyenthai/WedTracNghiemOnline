@@ -187,7 +187,7 @@ export function WorkspaceLayout({
           <div className="toolbar">
             <Badge tone="neutral">
               <Clock3 size={12} />
-              <span>{new Date().toLocaleDateString("vi-VN", { weekday: "short", day: "numeric", month: "short" })}</span>
+              <span className="mobile-hide">{new Date().toLocaleDateString("vi-VN", { weekday: "short", day: "numeric", month: "short" })}</span>
             </Badge>
             <button
               type="button"

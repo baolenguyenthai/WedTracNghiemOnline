@@ -1975,7 +1975,12 @@ function AdminBanksSection({
 
   const saveQuestion = async () => {
     if (!token || !selectedBank) return;
-    const body = {
+    const body = editingQuestionId ? {
+      id: editingQuestionId,
+      content: questionForm.content,
+      difficulty: questionForm.difficulty,
+      answers: questionForm.answers
+    } : {
       content: questionForm.content,
       difficulty: questionForm.difficulty,
       answers: questionForm.answers
@@ -2097,27 +2102,23 @@ function AdminBanksSection({
           {detailLoading ? <LoadingState /> : null}
           {selectedBank ? (
             <div className="stack">
-              <div className="admin-actions-toolbar" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", background: "var(--bg-glass)", padding: "0.75rem", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
-                <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", flex: 1 }}>
-                  <Button variant="secondary" size="sm" onClick={() => setIsBankModalOpen(true)}>
-                    <Edit3 size={13} /><span>Sửa</span>
-                  </Button>
-                  <Button variant="secondary" size="sm" onClick={() => approveBank("DA_DUYET")}>
-                    <CheckCircle2 size={13} /><span>Duyệt</span>
-                  </Button>
-                  <Button variant="secondary" size="sm" onClick={() => togglePublic(!selectedBank.isPublic)}>
-                    <ShieldCheck size={13} /><span>{selectedBank.isPublic ? "Ẩn" : "Công khai"}</span>
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={removeBank}>
-                    <Trash2 size={13} /><span>Xóa</span>
-                  </Button>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", flex: window.innerWidth <= 640 ? "100%" : "auto" }}>
-                  <Button variant="primary" size="sm" onClick={generateInsight} disabled={insightLoading} style={{ width: window.innerWidth <= 640 ? "100%" : "auto", justifyContent: "center" }}>
-                    {insightLoading ? <LoaderCircle size={13} className="spin" /> : <Sparkles size={13} />}
-                    <span>AI Phân tích</span>
-                  </Button>
-                </div>
+              <div className="admin-actions-toolbar" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center", background: "var(--bg-glass)", padding: "0.75rem", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+                <Button variant="secondary" size="sm" onClick={() => setIsBankModalOpen(true)}>
+                  <Edit3 size={13} /><span>Sửa</span>
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => approveBank("DA_DUYET")}>
+                  <CheckCircle2 size={13} /><span>Duyệt</span>
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => togglePublic(!selectedBank.isPublic)}>
+                  <ShieldCheck size={13} /><span>{selectedBank.isPublic ? "Ẩn" : "Công khai"}</span>
+                </Button>
+                <Button variant="danger" size="sm" onClick={removeBank}>
+                  <Trash2 size={13} /><span>Xóa</span>
+                </Button>
+                <Button variant="primary" size="sm" onClick={generateInsight} disabled={insightLoading} style={{ marginLeft: "auto" }}>
+                  {insightLoading ? <LoaderCircle size={13} className="spin" /> : <Sparkles size={13} />}
+                  <span>AI Phân tích</span>
+                </Button>
               </div>
               
               <div className="toolbar gap-sm" style={{ marginTop: "1rem" }}>
