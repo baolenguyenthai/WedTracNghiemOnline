@@ -130,31 +130,9 @@ banksRouter.get(
     }
 
     const questionCount = req.query.questionCount ? Number(req.query.questionCount) : 50;
-    const shuffleQuestions = req.query.shuffleQuestions !== "false";
-    const shuffleAnswers = req.query.shuffleAnswers !== "false";
-
-    let finalQuestions = [...bank.questions];
     
-    const shuffleArray = (array: any[]) => {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    };
-
-    if (shuffleQuestions) {
-      finalQuestions = shuffleArray(finalQuestions);
-    }
-    
-    finalQuestions = finalQuestions.slice(0, questionCount);
-
-    if (shuffleAnswers) {
-      finalQuestions = finalQuestions.map(q => ({
-        ...q,
-        answers: shuffleArray([...q.answers])
-      }));
-    }
+    // We no longer shuffle on the backend. Frontend handles shuffling to ensure unique order per player.
+    const finalQuestions = bank.questions.slice(0, questionCount);
 
     res.json(ok({ bank, questions: finalQuestions }));
   })

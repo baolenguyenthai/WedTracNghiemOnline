@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import { Users, Crown, Medal, Play, Trophy, Clock, Target, AlertCircle } from "lucide-react";
+import { Users, Crown, Medal, Play, Trophy, Clock, Target, AlertCircle, RefreshCw } from "lucide-react";
 import { Button, Input, Section, EmptyState, Badge } from "./common";
 import { apiFetch } from "@/api/client";
 import confetti from "canvas-confetti";
@@ -14,14 +14,26 @@ interface MultiplayerSectionProps {
   catalog: any;
 }
 
+const shuffleArray = (array: any[]) => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
 export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionProps) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomIdInput, setRoomIdInput] = useState("");
   const [roomState, setRoomState] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Create Room State
   const [selectedBankId, setSelectedBankId] = useState("");
   const [publicBanks, setPublicBanks] = useState<any[]>([]);
   const [questionCount, setQuestionCount] = useState<number>(20);
+  const [gameMode, setGameMode] = useState<"SYNCHRONOUS" | "INDEPENDENT">("SYNCHRONOUS");
   const [shuffleQuestions, setShuffleQuestions] = useState<boolean>(true);
   const [shuffleAnswers, setShuffleAnswers] = useState<boolean>(true);
   
@@ -35,13 +47,19 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     }
   }, [searchParams]);
   
-  // Trạng thái lúc chơi
+  // Trạng thái lúc chơi Đồng bộ (Kahoot)
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [timeLimit, setTimeLimit] = useState(60);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [potentialScore, setPotentialScore] = useState<number | null>(null);
+
+  // Trạng thái lúc chơi Tự do (Independent)
+  const [localQuestions, setLocalQuestions] = useState<any[]>([]);
+  const [localQuestionIndex, setLocalQuestionIndex] = useState(0);
+  const [independentAnswers, setIndependentAnswers] = useState<Record<number, number>>({});
+  const [isIndependentFinished, setIsIndependentFinished] = useState(false);
 
   useEffect(() => {
     // Connect to Socket.IO Server
@@ -63,8 +81,31 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
       setRoomState(state);
     });
 
+    newSocket.on("gameStarted", (data) => {
+      // Dành cho chế độ INDEPENDENT
+      let questions = data.questions;
+      if (data.shuffleQuestions) {
+        questions = shuffleArray(questions);
+      }
+      if (data.shuffleAnswers) {
+        questions = questions.map((q: any) => ({
+          ...q,
+          answers: shuffleArray([...q.answers])
+        }));
+      }
+      setLocalQuestions(questions);
+      setLocalQuestionIndex(0);
+      setIndependentAnswers({});
+      setIsIndependentFinished(false);
+    });
+
     newSocket.on("questionStarted", (data) => {
-      setCurrentQuestion(data.question);
+      // Dành cho chế độ SYNCHRONOUS
+      let question = data.question;
+      if (data.shuffleAnswers) {
+        question = { ...question, answers: shuffleArray([...question.answers]) };
+      }
+      setCurrentQuestion(question);
       setQuestionIndex(data.questionIndex);
       setTimeLimit(data.timeLimit);
       setTimeLeft(data.timeLimit);
@@ -106,7 +147,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     };
   }, [token]);
 
-  // Bộ đếm thời gian
+  // Bộ đếm thời gian cho SYNCHRONOUS
   useEffect(() => {
     if (!currentQuestion || timeLeft <= 0) return;
     const timer = setInterval(() => {
@@ -125,13 +166,16 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
   const createRoom = async () => {
     if (!socket || !selectedBankId) return;
     try {
-      // Load câu hỏi của bank trước
-      const response = await apiFetch<{ bank: any, questions: any[] }>(`/banks/${selectedBankId}/preview?questionCount=${questionCount}&shuffleQuestions=${shuffleQuestions}&shuffleAnswers=${shuffleAnswers}`, {}, token);
+      // Load câu hỏi của bank trước (Bản gốc, không trộn trên server)
+      const response = await apiFetch<{ bank: any, questions: any[] }>(`/banks/${selectedBankId}/preview?questionCount=${questionCount}`, {}, token);
       
       socket.emit("createRoom", {
         bankId: Number(selectedBankId),
         questions: response.data.questions,
-        user
+        user,
+        gameMode,
+        shuffleQuestions,
+        shuffleAnswers
       });
     } catch (err) {
       setError("Không thể tải bộ đề hoặc không có quyền truy cập.");
@@ -148,7 +192,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     socket.emit("startGame", { roomId: roomState.roomId });
   };
 
-  const submitAnswer = (answerId: number) => {
+  const submitSyncAnswer = (answerId: number) => {
     if (!socket || !roomState || selectedAnswer) return;
     setSelectedAnswer(answerId);
     
@@ -157,11 +201,27 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     const scoreEarned = Math.max(100, Math.floor(((maxTime - timeTaken) / maxTime) * 1000));
     setPotentialScore(scoreEarned);
     
-    // Play sound immediately when clicking
-    // We don't know if it's correct yet until server resolves, so just a "Ting" for submission
+    playTing();
+    socket.emit("submitAnswer", { roomId: roomState.roomId, answerId });
+  };
+
+  const submitIndAnswer = (questionId: number, answerId: number) => {
+    if (!socket || !roomState || isIndependentFinished) return;
+    
+    setIndependentAnswers(prev => ({ ...prev, [localQuestionIndex]: answerId }));
     playTing();
     
-    socket.emit("submitAnswer", { roomId: roomState.roomId, answerId });
+    socket.emit("submitIndependentAnswer", { roomId: roomState.roomId, questionId, answerId });
+    
+    if (localQuestionIndex < localQuestions.length - 1) {
+      setTimeout(() => setLocalQuestionIndex(prev => prev + 1), 300);
+    }
+  };
+
+  const finishIndExam = () => {
+    if (!socket || !roomState) return;
+    setIsIndependentFinished(true);
+    socket.emit("finishIndependentExam", { roomId: roomState.roomId });
   };
 
   const leaveRoom = () => {
@@ -171,6 +231,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     }
     setRoomState(null);
     setCurrentQuestion(null);
+    setLocalQuestions([]);
     setError(null);
   };
 
@@ -227,13 +288,28 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
               <div className="form-grid form-columns-2" style={{ marginBottom: "1rem" }}>
                 <label className="field-group">
+                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Chế độ chơi</span>
+                  <select 
+                    value={gameMode} 
+                    onChange={(e: any) => {
+                      setGameMode(e.target.value);
+                      if (e.target.value === "SYNCHRONOUS") setShuffleQuestions(false);
+                    }}
+                    style={{ padding: "0.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }}
+                  >
+                    <option value="SYNCHRONOUS">Đồng bộ (Kahoot)</option>
+                    <option value="INDEPENDENT">Tự do (Cá nhân)</option>
+                  </select>
+                </label>
+                <label className="field-group">
                   <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Số câu hỏi</span>
                   <Input type="number" min={1} max={100} value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} />
                 </label>
               </div>
               <div className="form-grid form-columns-2" style={{ marginBottom: "1rem" }}>
                 <label className="checkbox-label" style={{ fontSize: "0.85rem", opacity: 0.8 }}>
-                  <input type="checkbox" checked={shuffleQuestions} onChange={(e) => setShuffleQuestions(e.target.checked)} /> Trộn câu hỏi
+                  <input type="checkbox" checked={shuffleQuestions} onChange={(e) => setShuffleQuestions(e.target.checked)} disabled={gameMode === "SYNCHRONOUS"} /> 
+                  Trộn câu hỏi {gameMode === "SYNCHRONOUS" && "(Không hỗ trợ)"}
                 </label>
                 <label className="checkbox-label" style={{ fontSize: "0.85rem", opacity: 0.8 }}>
                   <input type="checkbox" checked={shuffleAnswers} onChange={(e) => setShuffleAnswers(e.target.checked)} /> Trộn đáp án
@@ -255,6 +331,9 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     return (
       <Section title="Sảnh chờ" subtitle="Đợi mọi người tham gia đông đủ rồi bắt đầu.">
         <div style={{ textAlign: "center", padding: "2rem", background: "var(--bg-surface)", borderRadius: "var(--radius-lg)", border: "1px solid var(--primary)", marginBottom: "2rem" }}>
+          <Badge tone={roomState.gameMode === "SYNCHRONOUS" ? "primary" : "warning"} style={{ marginBottom: "1rem" }}>
+            {roomState.gameMode === "SYNCHRONOUS" ? "Chế độ: Đồng bộ (Kahoot)" : "Chế độ: Tự do (Mỗi người 1 đề)"}
+          </Badge>
           <h1 style={{ fontSize: "3rem", letterSpacing: "0.2em", margin: "0 0 1rem 0", color: "var(--primary)" }}>
             {roomState.roomId}
           </h1>
@@ -304,8 +383,8 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     );
   }
 
-  // 3. Giao diện đang chơi PLAYING
-  if (roomState.status === "PLAYING" && currentQuestion) {
+  // 3. Giao diện đang chơi PLAYING (SYNCHRONOUS)
+  if (roomState.status === "PLAYING" && roomState.gameMode === "SYNCHRONOUS" && currentQuestion) {
     const timeProgress = (timeLeft / timeLimit) * 100;
     const isUrgent = timeLeft <= 5;
 
@@ -336,7 +415,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             return (
               <button
                 key={ans.id}
-                onClick={() => submitAnswer(ans.id)}
+                onClick={() => submitSyncAnswer(ans.id)}
                 disabled={selectedAnswer !== null}
                 style={{
                   padding: "1.5rem",
@@ -368,6 +447,86 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             )}
           </div>
         )}
+      </div>
+    );
+  }
+
+  // 3b. Giao diện đang chơi PLAYING (INDEPENDENT)
+  if (roomState.status === "PLAYING" && roomState.gameMode === "INDEPENDENT" && localQuestions.length > 0) {
+    if (isIndependentFinished) {
+      return (
+        <Section title="Đã nộp bài" subtitle="Chờ các người chơi khác hoàn thành...">
+          <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
+            <RefreshCw size={48} className="spin" style={{ color: "var(--primary)", margin: "0 auto", marginBottom: "1rem" }} />
+            <h3>Bạn đã hoàn thành bài thi!</h3>
+            <p style={{ opacity: 0.8 }}>Trận đấu sẽ tự động kết thúc khi tất cả mọi người nộp bài.</p>
+          </div>
+        </Section>
+      );
+    }
+
+    const currentLocalQ = localQuestions[localQuestionIndex];
+    const selectedAns = independentAnswers[localQuestionIndex];
+
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "2rem", alignItems: "start" }}>
+        <div className="stack">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2>Câu {localQuestionIndex + 1} / {localQuestions.length}</h2>
+          </div>
+          
+          <div className="card" style={{ padding: "2rem", fontSize: "1.25rem", marginBottom: "1rem" }}>
+            {currentLocalQ.content}
+          </div>
+
+          <div className="stack" style={{ gap: "1rem" }}>
+            {currentLocalQ.answers.map((ans: any) => {
+              const isSelected = selectedAns === ans.id;
+              return (
+                <button
+                  key={ans.id}
+                  onClick={() => submitIndAnswer(currentLocalQ.id, ans.id)}
+                  style={{
+                    padding: "1rem",
+                    textAlign: "left",
+                    background: isSelected ? "rgba(139,92,246,0.1)" : "var(--bg-surface)",
+                    border: isSelected ? "2px solid var(--primary)" : "1px solid var(--border)",
+                    borderRadius: "var(--radius)",
+                    cursor: "pointer",
+                    fontSize: "1.1rem"
+                  }}
+                >
+                  {ans.content}
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2rem" }}>
+            <Button variant="ghost" disabled={localQuestionIndex === 0} onClick={() => setLocalQuestionIndex(prev => prev - 1)}>
+              Câu trước
+            </Button>
+            {localQuestionIndex === localQuestions.length - 1 ? (
+              <Button onClick={finishIndExam} variant="primary">Nộp bài</Button>
+            ) : (
+              <Button onClick={() => setLocalQuestionIndex(prev => prev + 1)}>Câu tiếp theo</Button>
+            )}
+          </div>
+        </div>
+
+        <div className="card sticky-sidebar">
+          <h3>Bảng xếp hạng Trực tiếp</h3>
+          <div className="stack" style={{ marginTop: "1rem" }}>
+            {roomState.players.map((p: any, i: number) => (
+              <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem", background: p.id === socket?.id ? "rgba(139,92,246,0.1)" : "transparent", borderRadius: "var(--radius)" }}>
+                <span style={{ fontWeight: "bold" }}>
+                  #{i + 1} {p.fullName} {p.hasAnsweredCurrent && "✅"}
+                </span>
+                <span style={{ color: "var(--primary)", fontWeight: "bold" }}>{p.score}đ</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -463,5 +622,5 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
     );
   }
 
-  return <div className="app-loader">Đang đồng bộ...</div>;
+  return <div className="app-loader">Đang chờ kết nối...</div>;
 }

@@ -22,6 +22,9 @@ interface Room {
   questions: any[]; // The bank's questions
   questionStartTime: number;
   questionTimer?: NodeJS.Timeout;
+  gameMode: "SYNCHRONOUS" | "INDEPENDENT";
+  shuffleQuestions: boolean;
+  shuffleAnswers: boolean;
 }
 
 const rooms = new Map<string, Room>();
@@ -38,7 +41,7 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
     console.log("User connected:", socket.id);
 
     // Xử lý tạo phòng
-    socket.on("createRoom", ({ bankId, questions, user }) => {
+    socket.on("createRoom", ({ bankId, questions, user, gameMode, shuffleQuestions, shuffleAnswers }) => {
       const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newRoom: Room = {
         roomId,
@@ -48,7 +51,10 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         players: new Map(),
         currentQuestionIndex: 0,
         questions,
-        questionStartTime: 0
+        questionStartTime: 0,
+        gameMode: gameMode || "SYNCHRONOUS",
+        shuffleQuestions: shuffleQuestions ?? true,
+        shuffleAnswers: shuffleAnswers ?? true
       };
       
       // Host tự động join như một người chơi
@@ -106,14 +112,24 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       if (room && room.hostId === socket.id && room.status === "LOBBY") {
         room.status = "PLAYING";
         room.currentQuestionIndex = 0;
-        startQuestion(room, io);
+        if (room.gameMode === "SYNCHRONOUS") {
+          startQuestion(room, io);
+        } else {
+          room.questionStartTime = Date.now();
+          io.to(roomId).emit("gameStarted", { 
+            questions: room.questions,
+            shuffleQuestions: room.shuffleQuestions,
+            shuffleAnswers: room.shuffleAnswers
+          });
+          io.to(roomId).emit("roomUpdated", getRoomState(room));
+        }
       }
     });
 
     // Người chơi nộp đáp án
     socket.on("submitAnswer", ({ roomId, answerId }) => {
       const room = rooms.get(roomId);
-      if (!room || room.status !== "PLAYING") return;
+      if (!room || room.status !== "PLAYING" || room.gameMode !== "SYNCHRONOUS") return;
       
       const player = room.players.get(socket.id);
       if (!player || player.hasAnsweredCurrent) return;
@@ -152,6 +168,49 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       }
     });
 
+    socket.on("submitIndependentAnswer", ({ roomId, questionId, answerId }) => {
+      const room = rooms.get(roomId);
+      if (!room || room.status !== "PLAYING" || room.gameMode !== "INDEPENDENT") return;
+      
+      const player = room.players.get(socket.id);
+      if (!player) return;
+
+      const question = room.questions.find(q => q.id === questionId);
+      if (!question) return;
+
+      const correctAnswer = question.answers.find((a: any) => a.isCorrect);
+      
+      // Save answer
+      const qIndex = room.questions.indexOf(question);
+      player.answers[qIndex] = answerId;
+      
+      if (correctAnswer && correctAnswer.id === answerId) {
+        // Fixed score for independent mode: 100 points per correct answer
+        player.score += 100;
+      }
+
+      io.to(roomId).emit("roomUpdated", getRoomState(room));
+    });
+
+    socket.on("finishIndependentExam", ({ roomId }) => {
+      const room = rooms.get(roomId);
+      if (!room || room.status !== "PLAYING" || room.gameMode !== "INDEPENDENT") return;
+      
+      const player = room.players.get(socket.id);
+      if (!player) return;
+
+      player.hasAnsweredCurrent = true; // Use this flag to mean "finished exam"
+
+      // Check if all players finished
+      const allFinished = Array.from(room.players.values()).every(p => p.hasAnsweredCurrent);
+      if (allFinished) {
+        room.status = "FINISHED";
+        io.to(roomId).emit("gameFinished", getRoomState(room));
+      } else {
+        io.to(roomId).emit("roomUpdated", getRoomState(room));
+      }
+    });
+
     socket.on("disconnect", () => {
       // Dọn dẹp phòng khi user thoát
       for (const [roomId, room] of rooms.entries()) {
@@ -182,13 +241,18 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
             if (room.status === "PLAYING") {
               const allAnswered = Array.from(room.players.values()).every(p => p.hasAnsweredCurrent);
               if (allAnswered) {
-                if (room.questionTimer) clearTimeout(room.questionTimer);
-                room.questionTimer = setTimeout(() => {
-                  const currentRoom = rooms.get(roomId);
-                  if (currentRoom && currentRoom.status === "PLAYING") {
-                    nextQuestion(currentRoom, io);
-                  }
-                }, 1000);
+                if (room.gameMode === "SYNCHRONOUS") {
+                  if (room.questionTimer) clearTimeout(room.questionTimer);
+                  room.questionTimer = setTimeout(() => {
+                    const currentRoom = rooms.get(roomId);
+                    if (currentRoom && currentRoom.status === "PLAYING") {
+                      nextQuestion(currentRoom, io);
+                    }
+                  }, 1000);
+                } else {
+                  room.status = "FINISHED";
+                  io.to(roomId).emit("gameFinished", getRoomState(room));
+                }
               }
             }
 
@@ -213,7 +277,8 @@ function startQuestion(room: Room, io: Server) {
   io.to(room.roomId).emit("questionStarted", {
     questionIndex,
     question: room.questions[questionIndex],
-    timeLimit: 60
+    timeLimit: 60,
+    shuffleAnswers: room.shuffleAnswers
   });
   
   io.to(room.roomId).emit("roomUpdated", getRoomState(room));
@@ -242,6 +307,9 @@ function getRoomState(room: Room) {
     roomId: room.roomId,
     hostId: room.hostId,
     status: room.status,
+    gameMode: room.gameMode,
+    shuffleQuestions: room.shuffleQuestions,
+    shuffleAnswers: room.shuffleAnswers,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
     questions: room.status === "FINISHED" ? room.questions : undefined,
