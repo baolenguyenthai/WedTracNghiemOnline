@@ -45,6 +45,8 @@ import {
 } from "lucide-react";
 import { apiFetch, getApiBase } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
+import Cropper from "react-easy-crop";
+import getCroppedImg from "@/utils/cropImage";
 import {
   Badge,
   Button,
