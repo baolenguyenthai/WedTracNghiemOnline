@@ -9,6 +9,7 @@ interface Player {
   isReady: boolean;
   hasAnsweredCurrent: boolean;
   answers: Record<number, number>;
+  isConnected?: boolean;
 }
 
 interface Room {
@@ -58,7 +59,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         score: 0,
         isReady: true,
         hasAnsweredCurrent: false,
-        answers: {}
+        answers: {},
+        isConnected: true
       });
 
       rooms.set(roomId, newRoom);
@@ -88,7 +90,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         score: 0,
         isReady: true,
         hasAnsweredCurrent: false,
-        answers: {}
+        answers: {},
+        isConnected: true
       });
 
       io.to(roomId).emit("roomUpdated", getRoomState(room));
@@ -150,15 +153,42 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       // Dọn dẹp phòng khi user thoát
       for (const [roomId, room] of rooms.entries()) {
         if (room.players.has(socket.id)) {
-          room.players.delete(socket.id);
+          if (room.status === "LOBBY") {
+            room.players.delete(socket.id);
+          } else {
+            // Giữ lại player để hiển thị điểm, nhưng đánh dấu là đã ngắt kết nối
+            const player = room.players.get(socket.id)!;
+            player.isConnected = false;
+            player.hasAnsweredCurrent = true; // Không đợi họ trả lời nữa
+          }
           
-          if (room.players.size === 0) {
+          const hasConnectedPlayers = Array.from(room.players.values()).some(p => p.isConnected !== false);
+          
+          if (!hasConnectedPlayers) {
             rooms.delete(roomId); // Xóa phòng nếu trống
           } else {
-            // Nếu host thoát, chuyển host cho người đầu tiên
+            // Nếu host thoát, chuyển host cho người đầu tiên còn kết nối
             if (room.hostId === socket.id) {
-              room.hostId = Array.from(room.players.keys())[0];
+              const nextHost = Array.from(room.players.values()).find(p => p.isConnected !== false);
+              if (nextHost) {
+                room.hostId = nextHost.id;
+              }
             }
+
+            // Nếu đang chơi, kiểm tra xem việc ngắt kết nối có làm thỏa mãn điều kiện allAnswered không
+            if (room.status === "PLAYING") {
+              const allAnswered = Array.from(room.players.values()).every(p => p.hasAnsweredCurrent);
+              if (allAnswered) {
+                if (room.questionTimer) clearTimeout(room.questionTimer);
+                room.questionTimer = setTimeout(() => {
+                  const currentRoom = rooms.get(roomId);
+                  if (currentRoom && currentRoom.status === "PLAYING") {
+                    nextQuestion(currentRoom, io);
+                  }
+                }, 1000);
+              }
+            }
+
             io.to(roomId).emit("roomUpdated", getRoomState(room));
           }
         }

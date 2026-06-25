@@ -370,6 +370,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                   </td>
                   <td style={{ padding: "1rem", fontWeight: "bold" }}>
                     {p.fullName} {p.id === socket?.id && <Badge tone="primary">Bạn</Badge>}
+                    {p.isConnected === false && <span style={{ opacity: 0.5, fontSize: "0.8rem", marginLeft: "0.5rem" }}>(Đã thoát)</span>}
                   </td>
                   <td style={{ padding: "1rem", textAlign: "right", fontWeight: "bold", fontSize: "1.2rem", color: "var(--primary)" }}>
                     {p.score}
