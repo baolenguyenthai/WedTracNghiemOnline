@@ -205,6 +205,18 @@ export function WorkspaceLayout({
             >
               {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
             </button>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={() => {
+                if (window.confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+                  logout();
+                }
+              }}
+              title="Đăng xuất"
+            >
+              <LogOut size={18} color="var(--danger)" />
+            </button>
           </div>
         </header>
 
