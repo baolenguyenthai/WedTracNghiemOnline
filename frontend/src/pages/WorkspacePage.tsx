@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
@@ -1243,6 +1243,13 @@ function ProfileSection({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Cropper states
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [isCropping, setIsCropping] = useState(false);
+
   useEffect(() => {
     setProfile({
       fullName: user?.fullName || "",
@@ -1284,15 +1291,34 @@ function ProfileSection({
     }
   };
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !token) return;
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        setImageSrc(reader.result?.toString() || null);
+      });
+      reader.readAsDataURL(file);
+    }
+  };
 
-    setError(null);
-    setMessage(null);
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleUploadCroppedImage = async () => {
+    if (!token || !imageSrc || !croppedAreaPixels) return;
+
     try {
+      setIsCropping(true);
+      setError(null);
+      setMessage(null);
+      
+      const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels, 0);
+      if (!croppedImageBlob) throw new Error("Could not crop image");
+
       const formData = new FormData();
-      formData.append("avatar", file);
+      formData.append("avatar", croppedImageBlob, "avatar.jpg");
 
       const response = await fetch(`${getApiBase()}/auth/me/avatar`, {
         method: "POST",
@@ -1308,8 +1334,11 @@ function ProfileSection({
 
       onProfileUpdated(json.data.user);
       setMessage("Đã cập nhật ảnh đại diện.");
+      setImageSrc(null); // close cropper
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể tải ảnh.");
+    } finally {
+      setIsCropping(false);
     }
   };
 
@@ -1317,6 +1346,41 @@ function ProfileSection({
 
   return (
     <Section title="Hồ sơ" subtitle="Cập nhật thông tin cá nhân và đổi mật khẩu.">
+      {/* Crop Modal Overlay */}
+      {imageSrc && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.8)",
+          zIndex: 9999,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px"
+        }}>
+          <div style={{ position: "relative", width: "100%", maxWidth: "500px", height: "400px", background: "#333", borderRadius: "12px", overflow: "hidden" }}>
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+          <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+            <Button variant="secondary" onClick={() => setImageSrc(null)}>Hủy</Button>
+            <Button onClick={handleUploadCroppedImage} disabled={isCropping}>
+              {isCropping ? "Đang xử lý..." : "Cắt & Lưu"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Profile header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", padding: "1rem", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
         <label
@@ -1346,7 +1410,7 @@ function ProfileSection({
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.6rem", textAlign: "center", padding: "2px 0" }}>
             <Camera size={10} style={{ display: "inline-block", verticalAlign: "middle" }} />
           </div>
-          <input type="file" accept="image/*" style={{ display: "none" }} onChange={uploadAvatar} />
+          <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} onClick={(e) => (e.currentTarget.value = "")} />
         </label>
         <div>
           <div style={{ fontWeight: 700 }}>{user?.fullName}</div>
