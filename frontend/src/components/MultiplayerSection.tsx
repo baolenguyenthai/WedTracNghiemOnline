@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { Users, Crown, Medal, Play, Trophy, Clock, Target, AlertCircle, RefreshCw } from "lucide-react";
 import { Button, Input, Section, EmptyState, Badge } from "./common";
-import { apiFetch } from "@/api/client";
+import { apiFetch, getApiBase } from "@/api/client";
 import confetti from "canvas-confetti";
 import { useSearchParams } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
@@ -437,8 +437,12 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
             {roomState.players.map((p: any) => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem", background: "var(--bg)", borderRadius: "var(--radius)", border: p.id === socket?.id ? "1px solid var(--primary)" : "1px solid var(--border)" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: p.id === roomState.hostId ? "gold" : "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold" }}>
-                  {p.fullName?.[0]?.toUpperCase()}
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: p.id === roomState.hostId ? "gold" : "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold", overflow: "hidden" }}>
+                  {p.avatarUrl ? (
+                    <img src={p.avatarUrl.startsWith('http') ? p.avatarUrl : `${getApiBase().replace('/api', '')}${p.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    p.fullName?.[0]?.toUpperCase()
+                  )}
                 </div>
                 <div>
                   <div style={{ fontWeight: "bold" }}>{p.fullName} {p.id === socket?.id ? "(Bạn)" : ""}</div>
@@ -656,7 +660,14 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                   <td style={{ padding: "1rem", fontWeight: "bold", color: i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "#cd7f32" : "inherit" }}>
                     #{i + 1}
                   </td>
-                  <td style={{ padding: "1rem", fontWeight: "bold" }}>
+                  <td style={{ padding: "1rem", fontWeight: "bold", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold", overflow: "hidden", flexShrink: 0 }}>
+                      {p.avatarUrl ? (
+                        <img src={p.avatarUrl.startsWith('http') ? p.avatarUrl : `${getApiBase().replace('/api', '')}${p.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        p.fullName?.[0]?.toUpperCase()
+                      )}
+                    </div>
                     {p.fullName} {p.id === socket?.id && <Badge tone="primary">Bạn</Badge>}
                     {p.isConnected === false && <span style={{ opacity: 0.5, fontSize: "0.8rem", marginLeft: "0.5rem" }}>(Đã thoát)</span>}
                   </td>

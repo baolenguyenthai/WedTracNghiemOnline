@@ -10,6 +10,7 @@ interface Player {
   hasAnsweredCurrent: boolean;
   answers: Record<number, number>;
   isConnected?: boolean;
+  avatarUrl?: string | null;
 }
 
 interface Room {
@@ -68,7 +69,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         isReady: true,
         hasAnsweredCurrent: false,
         answers: {},
-        isConnected: true
+        isConnected: true,
+        avatarUrl: user.avatarUrl
       });
 
       rooms.set(roomId, newRoom);
@@ -102,7 +104,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         isReady: true,
         hasAnsweredCurrent: false,
         answers: {},
-        isConnected: true
+        isConnected: true,
+        avatarUrl: user?.avatarUrl
       });
 
       io.to(roomId).emit("roomUpdated", getRoomState(room));
