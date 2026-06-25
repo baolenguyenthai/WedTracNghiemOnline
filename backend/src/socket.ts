@@ -144,8 +144,9 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       if (correctAnswer && correctAnswer.id === answerId) {
         // Tính điểm: Trả lời càng nhanh điểm càng cao (Tối đa 1000đ)
         const timeTaken = Date.now() - room.questionStartTime;
-        const maxTime = 60000; // 60 giây
-        const scoreEarned = Math.max(100, Math.floor(((maxTime - timeTaken) / maxTime) * 1000));
+        const maxTime = room.timeLimitPerQuestion * 1000;
+        const actualTimeTaken = Math.min(Math.max(0, timeTaken), maxTime);
+        const scoreEarned = Math.max(100, Math.floor(((maxTime - actualTimeTaken) / maxTime) * 1000));
         player.score += scoreEarned;
       }
 
@@ -282,19 +283,19 @@ function startQuestion(room: Room, io: Server) {
   io.to(room.roomId).emit("questionStarted", {
     questionIndex,
     question: room.questions[questionIndex],
-    timeLimit: 60,
+    timeLimit: room.timeLimitPerQuestion,
     shuffleAnswers: room.shuffleAnswers
   });
   
   io.to(room.roomId).emit("roomUpdated", getRoomState(room));
 
-  // Tự động chuyển câu sau 60s
+  // Tự động chuyển câu sau thời gian giới hạn
   room.questionTimer = setTimeout(() => {
     const currentRoom = rooms.get(room.roomId);
     if (currentRoom && currentRoom.status === "PLAYING" && currentRoom.currentQuestionIndex === questionIndex) {
       nextQuestion(currentRoom, io);
     }
-  }, 60000);
+  }, room.timeLimitPerQuestion * 1000);
 }
 
 function nextQuestion(room: Room, io: Server) {
