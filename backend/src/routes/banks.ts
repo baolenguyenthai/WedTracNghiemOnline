@@ -135,8 +135,16 @@ banksRouter.get(
 
     let finalQuestions = [...bank.questions];
     
+    const shuffleArray = (array: any[]) => {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    };
+
     if (shuffleQuestions) {
-      finalQuestions.sort(() => 0.5 - Math.random());
+      finalQuestions = shuffleArray(finalQuestions);
     }
     
     finalQuestions = finalQuestions.slice(0, questionCount);
@@ -144,7 +152,7 @@ banksRouter.get(
     if (shuffleAnswers) {
       finalQuestions = finalQuestions.map(q => ({
         ...q,
-        answers: [...q.answers].sort(() => 0.5 - Math.random())
+        answers: shuffleArray([...q.answers])
       }));
     }
 

@@ -7,12 +7,20 @@ import { WorkspacePage } from "@/pages/WorkspacePage";
 import { ExamPage } from "@/pages/ExamPage";
 import { FlashcardPage } from "@/pages/FlashcardPage";
 
+import { useLocation } from "react-router-dom";
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
+  const location = useLocation();
+
   if (loading) {
     return <div className="app-loader"><LoadingState label="Đang đồng bộ phiên đăng nhập..." /></div>;
   }
-  if (!token) {
+
+  const queryParams = new URLSearchParams(location.search);
+  const isGuestJoining = queryParams.get("section") === "multiplayer" && queryParams.has("room");
+
+  if (!token && !isGuestJoining) {
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;

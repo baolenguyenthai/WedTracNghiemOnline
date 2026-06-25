@@ -71,7 +71,7 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
     });
 
     // Tham gia phòng
-    socket.on("joinRoom", ({ roomId, user }) => {
+    socket.on("joinRoom", ({ roomId, user, guestName }) => {
       const room = rooms.get(roomId);
       if (!room) {
         socket.emit("error", "Phòng không tồn tại.");
@@ -82,11 +82,14 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         return;
       }
 
+      const actualUserId = user?.id || -Math.floor(Math.random() * 1000000);
+      const actualFullName = user?.fullName || guestName || "Khách ẩn danh";
+
       socket.join(roomId);
       room.players.set(socket.id, {
         id: socket.id,
-        userId: user.id,
-        fullName: user.fullName,
+        userId: actualUserId,
+        fullName: actualFullName,
         score: 0,
         isReady: true,
         hasAnsweredCurrent: false,

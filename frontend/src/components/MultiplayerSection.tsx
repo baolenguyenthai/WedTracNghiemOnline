@@ -4,6 +4,8 @@ import { Users, Crown, Medal, Play, Trophy, Clock, Target, AlertCircle } from "l
 import { Button, Input, Section, EmptyState, Badge } from "./common";
 import { apiFetch } from "@/api/client";
 import confetti from "canvas-confetti";
+import { useSearchParams } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import { playTing, playBuzzer, playTickTock, playWin } from "@/utils/audio";
 
 interface MultiplayerSectionProps {
@@ -23,6 +25,16 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
   const [shuffleQuestions, setShuffleQuestions] = useState<boolean>(true);
   const [shuffleAnswers, setShuffleAnswers] = useState<boolean>(true);
   
+  const [searchParams] = useSearchParams();
+  const [guestName, setGuestName] = useState("");
+
+  useEffect(() => {
+    const roomParam = searchParams.get("room");
+    if (roomParam) {
+      setRoomIdInput(roomParam.toUpperCase());
+    }
+  }, [searchParams]);
+  
   // Trạng thái lúc chơi
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -32,8 +44,6 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
   const [potentialScore, setPotentialScore] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!token) return;
-    
     // Connect to Socket.IO Server
     const socketUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace("/api", "") : "http://localhost:4000";
     const newSocket = io(socketUrl, {
@@ -82,12 +92,14 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
     setSocket(newSocket);
 
-    // Fetch public banks for room creation
-    apiFetch<{ banks: any[] }>("/banks", {}, token).then(res => {
-      setPublicBanks(res.data.banks);
-    }).catch(err => {
-      console.error("Failed to load public banks", err);
-    });
+    // Fetch public banks for room creation ONLY if token exists
+    if (token) {
+      apiFetch<{ banks: any[] }>("/banks", {}, token).then(res => {
+        setPublicBanks(res.data.banks);
+      }).catch(err => {
+        console.error("Failed to load public banks", err);
+      });
+    }
 
     return () => {
       newSocket.disconnect();
@@ -128,7 +140,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
   const joinRoom = () => {
     if (!socket || !roomIdInput) return;
-    socket.emit("joinRoom", { roomId: roomIdInput.toUpperCase(), user });
+    socket.emit("joinRoom", { roomId: roomIdInput.toUpperCase(), user, guestName });
   };
 
   const startGame = () => {
@@ -185,7 +197,14 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                   onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
                   style={{ textTransform: "uppercase", letterSpacing: "2px", fontWeight: "bold" }}
                 />
-                <Button onClick={joinRoom} disabled={!roomIdInput.trim()}>Vào phòng</Button>
+                {!user && (
+                  <Input 
+                    placeholder="Nhập tên của bạn" 
+                    value={guestName} 
+                    onChange={(e) => setGuestName(e.target.value)}
+                  />
+                )}
+                <Button onClick={joinRoom} disabled={!roomIdInput.trim() || (!user && !guestName.trim())}>Vào phòng</Button>
               </div>
             </div>
 
@@ -243,9 +262,20 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
           
           <div style={{ marginTop: "2rem" }}>
             {isHost ? (
-              <Button onClick={startGame} disabled={roomState.players.length < 1}>
-                <Play size={18} /> BẮT ĐẦU TRẬN ĐẤU
-              </Button>
+              <div className="stack" style={{ alignItems: "center" }}>
+                <QRCodeSVG value={`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`} size={160} />
+                <Button variant="ghost" size="sm" onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`);
+                  alert("Đã copy link chia sẻ!");
+                }}>
+                  Copy Link Tham Gia
+                </Button>
+                <div style={{ marginTop: "1rem" }}>
+                  <Button onClick={startGame} disabled={roomState.players.length < 1}>
+                    <Play size={18} /> BẮT ĐẦU TRẬN ĐẤU
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div style={{ padding: "1rem", color: "var(--warning)", fontWeight: "bold" }}>
                 Đang chờ chủ phòng bắt đầu...
