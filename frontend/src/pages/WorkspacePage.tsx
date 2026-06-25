@@ -761,6 +761,7 @@ function UploadSection({
     defaultDurationMinutes: "20"
   });
   const [file, setFile] = useState<File | null>(null);
+  const [aiFile, setAiFile] = useState<File | null>(null);
   const [parsedQuestions, setParsedQuestions] = useState<ParsedQuestion[] | null>(null);
   const [generatedBank, setGeneratedBank] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -889,13 +890,21 @@ function UploadSection({
     setError(null);
     setMessage(null);
     try {
+      const formData = new FormData();
+      formData.append("bankName", aiForm.bankName);
+      formData.append("description", aiForm.description);
+      formData.append("gradeId", aiForm.gradeId);
+      formData.append("subjectName", aiForm.subjectName);
+      formData.append("questionCount", aiForm.questionCount);
+      formData.append("isPublic", String(aiForm.isPublic));
+      formData.append("prompt", aiForm.prompt);
+      if (aiFile) {
+        formData.append("file", aiFile);
+      }
+
       const response = await apiFetch<{ bank: BankSummary; questionCount: number }>("/banks/ai", {
         method: "POST",
-        body: JSON.stringify({
-          ...aiForm,
-          gradeId: Number(aiForm.gradeId),
-          questionCount: Number(aiForm.questionCount)
-        })
+        body: formData
       }, token);
       setMessage(`AI đã tạo ${response.data.questionCount} câu hỏi.`);
       setGeneratedBank(response.data.bank);
@@ -1035,9 +1044,8 @@ function UploadSection({
             </div>
             <Toggle checked={ocrForm.isPublic} onChange={(checked) => setOcrForm((value) => ({ ...value, isPublic: checked }))} label="Cho phép chỉnh số câu khi làm bài" />
             <label className="field-group">
-              <span>Chụp/Chọn ảnh chụp đề thi giấy</span>
-              {/* Note: capture="environment" will prompt camera on mobile/tablets directly */}
-              <Input type="file" accept="image/*" capture="environment" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+              <span>Chụp hoặc chọn ảnh từ thư viện</span>
+              <Input type="file" accept="image/*" onChange={(event) => setFile(event.target.files?.[0] || null)} />
             </label>
             <div className="section-note">Mẹo: Chụp rõ nét, đảm bảo đủ sáng. AI có thể nhận diện tốt cả công thức toán.</div>
             {error ? <div className="form-error">{error}</div> : null}
@@ -1153,6 +1161,13 @@ function UploadSection({
           <label className="field-group">
             <span>Nội dung cho AI</span>
             <Textarea value={aiForm.prompt} onChange={(event) => setAiForm((value) => ({ ...value, prompt: event.target.value }))} placeholder="Ví dụ: tạo câu hỏi về hàm số bậc nhất, mức độ dễ đến khó..." />
+          </label>
+          <label className="field-group">
+            <span>Tài liệu tham khảo (Tùy chọn)</span>
+            <Input type="file" accept=".pdf,.docx,.txt" onChange={(event) => setAiFile(event.target.files?.[0] || null)} />
+            <div className="section-note" style={{ marginTop: "-0.25rem" }}>
+              Bạn có thể tải lên file PDF, Word hoặc TXT để AI lấy dữ liệu từ đó ra tạo câu hỏi.
+            </div>
           </label>
           {error ? <div className="form-error">{error}</div> : null}
           {message ? <div className="form-success">{message}</div> : null}

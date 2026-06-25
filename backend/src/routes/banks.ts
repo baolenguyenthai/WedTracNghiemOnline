@@ -316,12 +316,53 @@ banksRouter.post(
 banksRouter.post(
   "/ai",
   requireAuth,
+  upload.single("file"),
   asyncHandler(async (req, res) => {
     if (req.user!.role !== "ADMIN") {
       throw new AppError(403, "Chỉ Quản trị viên mới được sử dụng tính năng này.");
     }
-    const data = aiGenerateSchema.parse(req.body);
+
+    // When file is uploaded via FormData, fields come as strings in req.body
+    const bodyData = {
+      ...req.body,
+      gradeId: Number(req.body.gradeId),
+      questionCount: Number(req.body.questionCount),
+      isPublic: req.body.isPublic === "true" || req.body.isPublic === true
+    };
+    const data = aiGenerateSchema.parse(bodyData);
     
+    // Extract text from uploaded file if present
+    let fileContent = "";
+    if (req.file) {
+      const mime = req.file.mimetype;
+      const buffer = req.file.buffer;
+      
+      if (mime === "application/pdf") {
+        try {
+          const pdfParse = (await import("pdf-parse")).default;
+          const pdfData = await pdfParse(buffer);
+          fileContent = pdfData.text;
+        } catch {
+          throw new AppError(400, "Không thể đọc file PDF. Vui lòng thử file khác.");
+        }
+      } else if (
+        mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        mime === "application/msword"
+      ) {
+        try {
+          const mammothLib = await import("mammoth");
+          const result = await mammothLib.default.extractRawText({ buffer });
+          fileContent = result.value;
+        } catch {
+          throw new AppError(400, "Không thể đọc file Word. Vui lòng thử file khác.");
+        }
+      } else if (mime === "text/plain") {
+        fileContent = buffer.toString("utf-8");
+      } else {
+        throw new AppError(400, "Định dạng file không hỗ trợ. Vui lòng chọn PDF, Word (.docx) hoặc TXT.");
+      }
+    }
+
     let finalSubjectId = data.subjectId;
     if (!finalSubjectId && data.subjectName) {
       let sub = await prisma.subject.findFirst({ where: { name: data.subjectName } });
@@ -340,9 +381,15 @@ banksRouter.post(
       throw new AppError(404, "Không tìm thấy cấp học hoặc môn học.");
     }
 
-    const generatedQuestions = await generateQuestionsWithGemini(
-      `${data.prompt}\n\nCấp học: ${grade.name}\nMôn học: ${subject.name}\nSố câu hỏi: ${data.questionCount}`
-    );
+    // Build prompt with optional file content
+    let fullPrompt = `${data.prompt}\n\nCấp học: ${grade.name}\nMôn học: ${subject.name}\nSố câu hỏi: ${data.questionCount}`;
+    if (fileContent.trim()) {
+      // Limit to ~15000 chars to avoid token overflow
+      const trimmedContent = fileContent.trim().substring(0, 15000);
+      fullPrompt += `\n\nDưới đây là nội dung tài liệu tham khảo để tạo câu hỏi:\n---\n${trimmedContent}\n---`;
+    }
+
+    const generatedQuestions = await generateQuestionsWithGemini(fullPrompt);
 
     const preparedQuestions = generatedQuestions.slice(0, data.questionCount).map((question) => ({
       content: question.content,
