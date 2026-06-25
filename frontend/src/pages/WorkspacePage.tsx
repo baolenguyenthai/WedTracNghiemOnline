@@ -2106,8 +2106,8 @@ function AdminBanksSection({
                 <Button variant="secondary" size="sm" className="btn-action" onClick={() => setIsBankModalOpen(true)}>
                   <Edit3 size={13} /><span>Sửa</span>
                 </Button>
-                <Button variant="secondary" size="sm" className="btn-action" onClick={() => approveBank("DA_DUYET")}>
-                  <CheckCircle2 size={13} /><span>Duyệt</span>
+                <Button variant="secondary" size="sm" className="btn-action" onClick={() => approveBank(selectedBank.status === "DA_DUYET" ? "CHUA_DUYET" : "DA_DUYET")}>
+                  <CheckCircle2 size={13} /><span>{selectedBank.status === "DA_DUYET" ? "Bỏ duyệt" : "Duyệt"}</span>
                 </Button>
                 <Button variant="secondary" size="sm" className="btn-action" onClick={() => togglePublic(!selectedBank.isPublic)}>
                   <ShieldCheck size={13} /><span>{selectedBank.isPublic ? "Ẩn" : "Công khai"}</span>
