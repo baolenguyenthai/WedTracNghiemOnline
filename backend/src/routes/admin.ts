@@ -406,6 +406,10 @@ adminRouter.delete(
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const examCount = await prisma.exam.count({ where: { bankId: id } });
+    if (examCount > 0) {
+      throw new AppError(400, "Không thể xóa bộ đề vì đã có lượt thi. Vui lòng ẩn bộ đề thay vì xóa.");
+    }
     await prisma.questionBank.delete({ where: { id } });
     res.json(ok({}, "Đã xóa bộ câu hỏi."));
   })
@@ -558,6 +562,10 @@ adminRouter.delete(
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
+    const examItemCount = await prisma.examItem.count({ where: { questionId: id } });
+    if (examItemCount > 0) {
+      throw new AppError(400, "Không thể xóa câu hỏi vì đã nằm trong lịch sử thi của người dùng.");
+    }
     await prisma.question.delete({ where: { id } });
     res.json(ok({}, "Đã xóa câu hỏi."));
   })

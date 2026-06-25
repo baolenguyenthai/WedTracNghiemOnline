@@ -1616,6 +1616,9 @@ function AdminCatalogSection({
   const [gradeName, setGradeName] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  
+  const [editingGrade, setEditingGrade] = useState<{id: number, name: string} | null>(null);
+  const [editingSubject, setEditingSubject] = useState<{id: number, name: string} | null>(null);
 
   const saveGrade = async () => {
     if (!token || !gradeName.trim()) return;
@@ -1655,6 +1658,30 @@ function AdminCatalogSection({
     }
   };
 
+  const submitEditGrade = async () => {
+    if (!token || !editingGrade || !editingGrade.name.trim()) return;
+    try {
+      await apiFetch(`/meta/admin/grades/${editingGrade.id}`, { method: "PUT", body: JSON.stringify({ name: editingGrade.name }) }, token);
+      setEditingGrade(null);
+      await catalog.refresh();
+      setMessage("Đã cập nhật cấp học.");
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const submitEditSubject = async () => {
+    if (!token || !editingSubject || !editingSubject.name.trim()) return;
+    try {
+      await apiFetch(`/meta/admin/subjects/${editingSubject.id}`, { method: "PUT", body: JSON.stringify({ name: editingSubject.name }) }, token);
+      setEditingSubject(null);
+      await catalog.refresh();
+      setMessage("Đã cập nhật môn học.");
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   return (
     <Section title="Môn học và cấp học" subtitle="Danh mục dùng chung cho bộ đề, thống kê và bộ lọc.">
       <div className="section-grid columns-2">
@@ -1665,7 +1692,12 @@ function AdminCatalogSection({
               {catalog.grades.map((grade) => (
                 <tr key={grade.id}>
                   <td>{grade.name}</td>
-                  <td style={{ width: 50 }}><Button variant="danger" size="sm" onClick={() => removeGrade(grade.id)}><Trash2 size={13} /></Button></td>
+                  <td style={{ width: 90 }}>
+                    <div className="toolbar gap-xs">
+                      <Button variant="secondary" size="sm" onClick={() => setEditingGrade({ id: grade.id, name: grade.name })}><Edit3 size={13} /></Button>
+                      <Button variant="danger" size="sm" onClick={() => removeGrade(grade.id)}><Trash2 size={13} /></Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </Table>
@@ -1678,7 +1710,12 @@ function AdminCatalogSection({
               {catalog.subjects.map((subject) => (
                 <tr key={subject.id}>
                   <td>{subject.name}</td>
-                  <td style={{ width: 50 }}><Button variant="danger" size="sm" onClick={() => removeSubject(subject.id)}><Trash2 size={13} /></Button></td>
+                  <td style={{ width: 90 }}>
+                    <div className="toolbar gap-xs">
+                      <Button variant="secondary" size="sm" onClick={() => setEditingSubject({ id: subject.id, name: subject.name })}><Edit3 size={13} /></Button>
+                      <Button variant="danger" size="sm" onClick={() => removeSubject(subject.id)}><Trash2 size={13} /></Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </Table>
@@ -1686,6 +1723,34 @@ function AdminCatalogSection({
         </Subsection>
       </div>
       {message ? <div className="form-success mt-lg">{message}</div> : null}
+
+      {/* Modal Sửa Cấp học */}
+      {editingGrade && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => e.target === e.currentTarget && setEditingGrade(null)}>
+          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
+            <h3 style={{ marginTop: 0 }}>Sửa cấp học</h3>
+            <Input value={editingGrade.name} onChange={(e) => setEditingGrade({ ...editingGrade, name: e.target.value })} style={{ marginBottom: "1.5rem" }} autoFocus />
+            <div className="toolbar" style={{ justifyContent: "flex-end", gap: "1rem" }}>
+              <Button variant="secondary" onClick={() => setEditingGrade(null)}>Hủy</Button>
+              <Button onClick={submitEditGrade}>Lưu thay đổi</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Sửa Môn học */}
+      {editingSubject && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => e.target === e.currentTarget && setEditingSubject(null)}>
+          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
+            <h3 style={{ marginTop: 0 }}>Sửa môn học</h3>
+            <Input value={editingSubject.name} onChange={(e) => setEditingSubject({ ...editingSubject, name: e.target.value })} style={{ marginBottom: "1.5rem" }} autoFocus />
+            <div className="toolbar" style={{ justifyContent: "flex-end", gap: "1rem" }}>
+              <Button variant="secondary" onClick={() => setEditingSubject(null)}>Hủy</Button>
+              <Button onClick={submitEditSubject}>Lưu thay đổi</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Section>
   );
 }
@@ -1855,10 +1920,14 @@ function AdminBanksSection({
   const removeBank = async () => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa không?")) return;
     if (!token || !selectedBank) return;
-    await apiFetch(`/admin/banks/${selectedBank.id}`, { method: "DELETE" }, token);
-    setSelectedBank(null);
-    setQuestions([]);
-    await loadBanks();
+    try {
+      await apiFetch(`/admin/banks/${selectedBank.id}`, { method: "DELETE" }, token);
+      setSelectedBank(null);
+      setQuestions([]);
+      await loadBanks();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   const editQuestion = (question: Question) => {
@@ -1918,11 +1987,15 @@ function AdminBanksSection({
   const deleteQuestion = async (questionId: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa không?")) return;
     if (!token) return;
-    await apiFetch(`/admin/questions/${questionId}`, { method: "DELETE" }, token);
-    if (selectedBank) {
-      await loadDetail(selectedBank.id);
+    try {
+      await apiFetch(`/admin/questions/${questionId}`, { method: "DELETE" }, token);
+      if (selectedBank) {
+        await loadDetail(selectedBank.id);
+      }
+      await loadBanks();
+    } catch (err: any) {
+      alert(err.message);
     }
-    await loadBanks();
   };
 
   return (
