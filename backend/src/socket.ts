@@ -25,6 +25,7 @@ interface Room {
   gameMode: "SYNCHRONOUS" | "INDEPENDENT";
   shuffleQuestions: boolean;
   shuffleAnswers: boolean;
+  timeLimitPerQuestion: number;
 }
 
 const rooms = new Map<string, Room>();
@@ -41,7 +42,7 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
     console.log("User connected:", socket.id);
 
     // Xử lý tạo phòng
-    socket.on("createRoom", ({ bankId, questions, user, gameMode, shuffleQuestions, shuffleAnswers }) => {
+    socket.on("createRoom", ({ bankId, questions, user, gameMode, shuffleQuestions, shuffleAnswers, timeLimitPerQuestion }) => {
       const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
       const newRoom: Room = {
         roomId,
@@ -54,7 +55,8 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
         questionStartTime: 0,
         gameMode: gameMode || "SYNCHRONOUS",
         shuffleQuestions: shuffleQuestions ?? true,
-        shuffleAnswers: shuffleAnswers ?? true
+        shuffleAnswers: shuffleAnswers ?? true,
+        timeLimitPerQuestion: timeLimitPerQuestion ?? 60
       };
       
       // Host tự động join như một người chơi
@@ -168,7 +170,7 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       }
     });
 
-    socket.on("submitIndependentAnswer", ({ roomId, questionId, answerId }) => {
+    socket.on("submitIndependentAnswer", ({ roomId, questionId, answerId, timeTaken }) => {
       const room = rooms.get(roomId);
       if (!room || room.status !== "PLAYING" || room.gameMode !== "INDEPENDENT") return;
       
@@ -185,8 +187,11 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       player.answers[qIndex] = answerId;
       
       if (correctAnswer && correctAnswer.id === answerId) {
-        // Fixed score for independent mode: 100 points per correct answer
-        player.score += 100;
+        // Calculate score based on timeTaken
+        const maxTime = room.timeLimitPerQuestion * 1000;
+        const actualTimeTaken = Math.min(Math.max(0, timeTaken), maxTime); // clamp between 0 and maxTime
+        const scoreEarned = Math.max(100, Math.floor(((maxTime - actualTimeTaken) / maxTime) * 1000));
+        player.score += scoreEarned;
       }
 
       io.to(roomId).emit("roomUpdated", getRoomState(room));
@@ -310,6 +315,7 @@ function getRoomState(room: Room) {
     gameMode: room.gameMode,
     shuffleQuestions: room.shuffleQuestions,
     shuffleAnswers: room.shuffleAnswers,
+    timeLimitPerQuestion: room.timeLimitPerQuestion,
     currentQuestionIndex: room.currentQuestionIndex,
     totalQuestions: room.questions.length,
     questions: room.status === "FINISHED" ? room.questions : undefined,
