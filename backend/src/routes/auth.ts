@@ -9,21 +9,19 @@ import { clearPasswordResetToken, setPasswordResetToken, verifyPasswordResetToke
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { v2 as cloudinary } from "cloudinary";
 import { env } from "../config/env.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-let s3Client: S3Client | null = null;
-if (env.R2_ACCOUNT_ID && env.R2_ACCESS_KEY_ID && env.R2_SECRET_ACCESS_KEY) {
-  s3Client = new S3Client({
-    region: "auto",
-    endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: env.R2_ACCESS_KEY_ID,
-      secretAccessKey: env.R2_SECRET_ACCESS_KEY
-    }
+let useCloudinary = false;
+if (env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET) {
+  cloudinary.config({
+    cloud_name: env.CLOUDINARY_CLOUD_NAME,
+    api_key: env.CLOUDINARY_API_KEY,
+    api_secret: env.CLOUDINARY_API_SECRET
   });
+  useCloudinary = true;
 }
 
 
@@ -171,15 +169,18 @@ authRouter.post(
     const filename = req.file.fieldname + "-" + uniqueSuffix + path.extname(req.file.originalname);
     let avatarUrl = "";
 
-    if (s3Client && env.R2_BUCKET_NAME && env.R2_PUBLIC_URL) {
-      // Upload to R2
-      await s3Client.send(new PutObjectCommand({
-        Bucket: env.R2_BUCKET_NAME,
-        Key: filename,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype
-      }));
-      avatarUrl = `${env.R2_PUBLIC_URL.replace(/\/$/, '')}/${filename}`;
+    if (useCloudinary) {
+      // Upload to Cloudinary via stream
+      avatarUrl = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "avatars" },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result!.secure_url);
+          }
+        );
+        stream.end(req.file!.buffer);
+      });
     } else {
       // Fallback to local
       const dest = path.join("uploads", "avatars", filename);
