@@ -339,7 +339,8 @@ banksRouter.post(
       
       if (mime === "application/pdf") {
         try {
-          const pdfParse = (await import("pdf-parse")).default;
+          const pdfParseModule = (await import("pdf-parse")) as any;
+          const pdfParse = pdfParseModule.default || pdfParseModule;
           const pdfData = await pdfParse(buffer);
           fileContent = pdfData.text;
         } catch {
@@ -350,8 +351,9 @@ banksRouter.post(
         mime === "application/msword"
       ) {
         try {
-          const mammothLib = await import("mammoth");
-          const result = await mammothLib.default.extractRawText({ buffer });
+          const mammothLib = (await import("mammoth")) as any;
+          const extract = mammothLib.default?.extractRawText || mammothLib.extractRawText;
+          const result = await extract({ buffer });
           fileContent = result.value;
         } catch {
           throw new AppError(400, "Không thể đọc file Word. Vui lòng thử file khác.");
