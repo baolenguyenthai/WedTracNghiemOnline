@@ -4,6 +4,7 @@ import { LayoutDashboard, Menu, LogOut, UserCircle2, ClipboardList, ShieldCheck,
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthContext";
 import { Badge, Button } from "./common";
+import { getApiBase } from "@/api/client";
 
 export type NavItem = {
   key: string;
@@ -126,22 +127,28 @@ export function WorkspaceLayout({
 
         <div className="sidebar-meta">
           <div className="sidebar-user">
-            <span
+            <div
               style={{
-                width: 28,
-                height: 28,
+                position: "relative",
+                width: 32,
+                height: 32,
                 borderRadius: "50%",
                 background: "linear-gradient(135deg, var(--primary), var(--accent))",
                 display: "grid",
                 placeItems: "center",
-                fontSize: "0.75rem",
+                fontSize: "0.85rem",
                 fontWeight: 800,
                 color: "#fff",
-                flexShrink: 0
+                flexShrink: 0,
+                overflow: "hidden"
               }}
             >
-              {userInitial}
-            </span>
+              {user?.avatarUrl ? (
+                <img src={`${getApiBase().replace('/api', '')}${user.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                userInitial
+              )}
+            </div>
             <span>{user?.fullName}</span>
           </div>
           <Badge tone={user?.role === "ADMIN" ? "warning" : "primary"}>{user?.role === "ADMIN" ? "Quản trị viên" : "Học viên"}</Badge>

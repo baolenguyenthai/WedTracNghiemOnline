@@ -8,6 +8,7 @@ export type SafeUser = {
   username: string;
   fullName: string;
   email: string;
+  avatarUrl: string | null;
   role: string;
   status: "ACTIVE" | "LOCKED";
   createdAt: Date;
@@ -23,6 +24,7 @@ export function toSafeUser(user: UserWithRole): SafeUser {
     username: user.username,
     fullName: user.fullName ?? "",
     email: user.email ?? "",
+    avatarUrl: user.avatarUrl ?? null,
     role: user.vaiTro?.name ?? "USER",
     status: user.status === 1 ? "ACTIVE" : "LOCKED",
     createdAt: user.createdAt

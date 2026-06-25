@@ -45,6 +45,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/gamification", gamificationRouter);
 app.use("/api", commentsRouter); // routes inside are like /questions/:id/comments
 app.use("/api/study", studyRouter);
+app.use("/uploads", express.static("uploads"));
 
 app.use(notFound);
 app.use(errorHandler);

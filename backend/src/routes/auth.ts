@@ -6,6 +6,19 @@ import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema,
 import { requireAuth } from "../middleware/auth.js";
 import { sendOtpEmail } from "../lib/email.js";
 import { clearPasswordResetToken, setPasswordResetToken, verifyPasswordResetToken } from "../lib/password-reset.js";
+import multer from "multer";
+import path from "path";
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/avatars/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 export const authRouter = Router();
 
@@ -131,6 +144,32 @@ authRouter.patch(
     });
 
     res.json(ok({ user: toSafeUser(updated) }, "Cập nhật hồ sơ thành công."));
+  })
+);
+
+authRouter.post(
+  "/me/avatar",
+  requireAuth,
+  upload.single("avatar"),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new AppError(400, "Không có file nào được tải lên.");
+    }
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      throw new AppError(404, "Không tìm thấy người dùng.");
+    }
+
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { avatarUrl },
+      include: {
+        vaiTro: true
+      }
+    });
+
+    res.json(ok({ user: toSafeUser(updated), avatarUrl }, "Cập nhật ảnh đại diện thành công."));
   })
 );
 

@@ -1284,28 +1284,70 @@ function ProfileSection({
     }
   };
 
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !token) return;
+
+    setError(null);
+    setMessage(null);
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await fetch(`${getApiBase()}/auth/me/avatar`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+      const json = await response.json();
+      if (!response.ok || !json.success) {
+        throw new Error(json.message || "Tải ảnh thất bại.");
+      }
+
+      onProfileUpdated(json.data.user);
+      setMessage("Đã cập nhật ảnh đại diện.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể tải ảnh.");
+    }
+  };
+
   const userInitial = user?.fullName?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <Section title="Hồ sơ" subtitle="Cập nhật thông tin cá nhân và đổi mật khẩu.">
       {/* Profile header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", padding: "1rem", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
-        <span
+        <label
           style={{
-            width: 48,
-            height: 48,
+            position: "relative",
+            width: 64,
+            height: 64,
             borderRadius: "50%",
             background: "linear-gradient(135deg, var(--primary), var(--accent))",
             display: "grid",
             placeItems: "center",
-            fontSize: "1.1rem",
+            fontSize: "1.5rem",
             fontWeight: 800,
             color: "#fff",
-            flexShrink: 0
+            flexShrink: 0,
+            cursor: "pointer",
+            overflow: "hidden",
+            border: "2px solid var(--primary-muted)"
           }}
+          title="Bấm để tải ảnh đại diện"
         >
-          {userInitial}
-        </span>
+          {user?.avatarUrl ? (
+            <img src={`${getApiBase().replace('/api', '')}${user.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            userInitial
+          )}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.6rem", textAlign: "center", padding: "2px 0" }}>
+            <Camera size={10} style={{ display: "inline-block", verticalAlign: "middle" }} />
+          </div>
+          <input type="file" accept="image/*" style={{ display: "none" }} onChange={uploadAvatar} />
+        </label>
         <div>
           <div style={{ fontWeight: 700 }}>{user?.fullName}</div>
           <div className="section-note">@{user?.username} · {user?.email}</div>

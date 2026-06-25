@@ -20,6 +20,7 @@ model User {
   username      String          @unique @db.VarChar(50) @map("ten_dang_nhap")
   passwordHash  String          @db.VarChar(255) @map("mat_khau")
   fullName      String?         @db.VarChar(100) @map("ho_ten")
+  avatarUrl     String?         @db.VarChar(255) @map("anh_dai_dien")
   email         String?         @unique @db.VarChar(100)
   vaiTroId      Int?            @map("vai_tro_id")
   status        Int?            @default(1) @map("trang_thai")
