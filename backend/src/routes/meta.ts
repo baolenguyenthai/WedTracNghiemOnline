@@ -103,11 +103,25 @@ metaRouter.delete(
   requireRole("ADMIN"),
   asyncHandler(async (req, res) => {
     const id = Number(req.params.id);
-    const count = await prisma.questionBank.count({ where: { subjectId: id } });
-    if (count > 0) {
-      throw new AppError(400, "Không thể xóa môn học vì đang có bộ đề thuộc môn học này.");
+    const examCount = await prisma.exam.count({
+      where: {
+        bank: {
+          subjectId: id,
+        },
+      },
+    });
+
+    if (examCount > 0) {
+      throw new AppError(400, "Không thể xóa môn học vì đã có người thi các bộ đề thuộc môn học này.");
     }
-    await prisma.subject.delete({ where: { id } });
-    res.json(ok({}, "Đã xóa môn học."));
+
+    await prisma.$transaction(async (tx) => {
+      // Xóa tất cả bộ đề thuộc môn học này. 
+      // Do trong schema đã cấu hình Cascade, việc này sẽ tự động xóa luôn các câu hỏi, đáp án, bài thi liên quan đến bộ đề.
+      await tx.questionBank.deleteMany({ where: { subjectId: id } });
+      // Xóa môn học
+      await tx.subject.delete({ where: { id } });
+    });
+    res.json(ok({}, "Đã xóa môn học và các dữ liệu liên quan."));
   })
 );
