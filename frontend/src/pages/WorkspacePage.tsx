@@ -2102,11 +2102,14 @@ function AdminBanksSection({
           {detailLoading ? <LoadingState /> : null}
           {selectedBank ? (
             <div className="stack">
+              <div style={{ textAlign: "center", color: "var(--text-secondary)", fontWeight: 600, fontSize: "0.9rem" }}>
+                {selectedBank.subject?.name || "Chưa phân môn"} - {selectedBank.grade?.name || "Chưa phân cấp"}
+              </div>
               <div className="admin-actions-toolbar">
                 <Button variant="secondary" size="sm" className="btn-action" onClick={() => setIsBankModalOpen(true)}>
                   <Edit3 size={13} /><span>Sửa</span>
                 </Button>
-                <Button variant="secondary" size="sm" className="btn-action" onClick={() => approveBank(selectedBank.status === "DA_DUYET" ? "CHUA_DUYET" : "DA_DUYET")}>
+                <Button variant="secondary" size="sm" className="btn-action" onClick={() => approveBank(selectedBank.status === "DA_DUYET" ? "CHO_DUYET" : "DA_DUYET")}>
                   <CheckCircle2 size={13} /><span>{selectedBank.status === "DA_DUYET" ? "Bỏ duyệt" : "Duyệt"}</span>
                 </Button>
                 <Button variant="secondary" size="sm" className="btn-action" onClick={() => togglePublic(!selectedBank.isPublic)}>
