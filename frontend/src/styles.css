@@ -1164,9 +1164,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   }
   .workspace-topbar .toolbar {
     margin-left: auto;
+    gap: 0.25rem;
   }
   .workspace-topbar h1 { 
-    font-size: 1.15rem; 
+    font-size: 1.05rem; 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1175,11 +1176,18 @@ button, input, select, textarea { font: inherit; color: inherit; }
     display: none;
   }
   .workspace-topbar .icon-button {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
   }
-  .mobile-hide {
-    display: none;
+  .workspace-topbar .icon-button svg {
+    width: 14px;
+    height: 14px;
+  }
+  .workspace-topbar .date-text {
+    font-size: 0.7rem;
+  }
+  .workspace-topbar .badge {
+    padding: 0.25rem 0.4rem;
   }
 }
 
