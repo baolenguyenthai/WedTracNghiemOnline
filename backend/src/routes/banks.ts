@@ -57,7 +57,7 @@ banksRouter.get(
           select: { id: true, fullName: true, username: true, email: true }
         },
         _count: {
-          select: { questions: true }
+          select: { questions: true, exams: true }
         }
       },
       orderBy: [
@@ -84,7 +84,7 @@ banksRouter.get(
           select: { id: true, fullName: true, username: true }
         },
         _count: {
-          select: { questions: true }
+          select: { questions: true, exams: true }
         }
       }
     });
