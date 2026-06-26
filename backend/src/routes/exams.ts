@@ -357,8 +357,6 @@ examsRouter.get(
     if (filters.search) {
       const s = filters.search.toLowerCase();
       rows = rows.filter(r => r.userName.toLowerCase().includes(s) || r.username.toLowerCase().includes(s));
-    } else {
-      rows = rows.slice(0, 5);
     }
 
     res.json(ok({ leaderboard: rows }));
