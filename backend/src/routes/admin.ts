@@ -145,12 +145,10 @@ adminRouter.get(
       where,
       include: {
         vaiTro: true
-      },
-      orderBy: [
-        { vaiTroId: "asc" },
-        { createdAt: "desc" }
-      ]
+      }
     });
+    
+    users.sort((a, b) => a.fullName.localeCompare(b.fullName, "vi", { sensitivity: "base" }));
     res.json(ok({ users: users.map(toSafeUser) }));
   })
 );
