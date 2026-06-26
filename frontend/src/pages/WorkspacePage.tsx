@@ -391,6 +391,7 @@ function HistorySection({ token }: { token: string | null }) {
   const [detail, setDetail] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [searchSubject, setSearchSubject] = useState("");
 
   const load = async () => {
     if (!token) return;
@@ -440,10 +441,15 @@ function HistorySection({ token }: { token: string | null }) {
         }
       >
         <div className="stack">
+          <Input 
+            placeholder="Tìm kiếm tên môn học..." 
+            value={searchSubject} 
+            onChange={(e) => setSearchSubject(e.target.value)} 
+          />
           {loading ? <LoadingState /> : null}
           {!loading && !exams.length ? <EmptyState title="Chưa có lịch sử" description="Hãy bắt đầu một bài thi để hệ thống ghi kết quả." /> : null}
           <div className="list scrollable-list">
-            {exams.map((exam) => (
+            {exams.filter((exam) => exam.subjectName.toLowerCase().includes(searchSubject.toLowerCase())).map((exam) => (
               <button
                 key={exam.id}
                 type="button"
