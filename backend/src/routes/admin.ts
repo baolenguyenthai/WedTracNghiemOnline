@@ -146,6 +146,8 @@ adminRouter.get(
       include: {
         vaiTro: true
       }
+    });
+
     users.sort((a, b) => {
       // 1. Sort by Role (Admin first)
       const roleA = a.vaiTro?.name === "ADMIN" ? 0 : 1;
