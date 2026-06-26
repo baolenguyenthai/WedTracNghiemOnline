@@ -153,7 +153,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
   // Handle setting initial timeLeft for INDEPENDENT mode once roomState is loaded
   useEffect(() => {
-    if (roomState?.status === "PLAYING" && roomState?.gameMode === "INDEPENDENT" && localQuestions.length > 0 && localQuestionIndex === 0 && selectedAnswer === null && timeLeft === 0) {
+    if (roomState?.status === "PLAYING" && roomState?.gameMode === "INDEPENDENT" && localQuestions.length > 0 && localQuestionIndex === 0 && selectedAnswer === null && timeLeft === -1) {
       setTimeLeft(roomState.timeLimitPerQuestion);
       setTimeLimit(roomState.timeLimitPerQuestion);
     }
@@ -183,7 +183,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
   // Handle timeout for INDEPENDENT mode
   useEffect(() => {
     if (roomState?.status === "PLAYING" && roomState?.gameMode === "INDEPENDENT" && !isIndependentFinished && selectedAnswer === null) {
-      if (timeLeft <= 0) {
+      if (timeLeft === 0) {
         // Hết giờ
         setSelectedAnswer(-1); 
         playBuzzer();
@@ -475,7 +475,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <h2>Câu {questionIndex + 1} / {roomState.totalQuestions}</h2>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.5rem", fontWeight: "bold", color: isUrgent ? "var(--danger)" : "var(--primary)" }}>
-            <Clock size={24} /> 00:{String(timeLeft).padStart(2, '0')}
+            <Clock size={24} /> 00:{String(Math.max(0, timeLeft)).padStart(2, '0')}
           </div>
         </div>
         
@@ -568,7 +568,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1.5rem", fontWeight: "bold", color: isUrgent ? "var(--danger)" : "var(--primary)" }}>
-            <Clock size={24} /> 00:{String(timeLeft).padStart(2, '0')}
+            <Clock size={24} /> 00:{String(Math.max(0, timeLeft)).padStart(2, '0')}
           </div>
         </div>
         
