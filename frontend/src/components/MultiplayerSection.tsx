@@ -797,7 +797,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: "1.5rem" }}>
               Danh sách đáp án bạn đã chọn so với đáp án đúng.
             </p>
-            <div style={{ maxHeight: "400px", overflowY: "auto", paddingRight: "1rem" }}>
+            <div style={{ maxHeight: "650px", overflowY: "auto", paddingRight: "1rem" }}>
               <div className="stack" style={{ gap: "1.5rem" }}>
                 {roomState.questions.map((q: any, i: number) => {
                   const myAnswerId = myPlayer?.answers?.[i];
