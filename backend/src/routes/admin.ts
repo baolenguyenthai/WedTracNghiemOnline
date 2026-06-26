@@ -258,6 +258,12 @@ adminRouter.delete(
     if (id === req.user!.id) {
       throw new AppError(400, "Không thể tự xóa chính mình.");
     }
+    
+    const examsCount = await prisma.exam.count({ where: { userId: id } });
+    if (examsCount > 0) {
+      throw new AppError(400, "Không thể xóa người dùng đã tham gia thi.");
+    }
+
     await prisma.user.delete({ where: { id } });
     res.json(ok({}, "Đã xóa người dùng."));
   })

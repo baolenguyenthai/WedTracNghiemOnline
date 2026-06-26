@@ -1593,6 +1593,7 @@ function AdminUsersSection({
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
     username: "",
     fullName: "",
@@ -1622,15 +1623,16 @@ function AdminUsersSection({
     setSelectedId(user.id);
     setForm({
       username: user.username,
-      fullName: user.fullName,
-      email: user.email,
+      fullName: user.fullName || "",
+      email: user.email || "",
       password: "",
       role: user.role,
       status: user.status
     });
+    setIsModalOpen(true);
   };
 
-  const clear = () => {
+  const create = () => {
     setSelectedId(null);
     setForm({
       username: "",
@@ -1640,52 +1642,49 @@ function AdminUsersSection({
       role: "USER",
       status: "ACTIVE"
     });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedId(null);
   };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!token) return;
     const body = { ...form };
-    if (selectedId) {
-      await apiFetch(`/admin/users/${selectedId}`, { method: "PUT", body: JSON.stringify(body) }, token);
-    } else {
-      await apiFetch(`/admin/users`, { method: "POST", body: JSON.stringify(body) }, token);
+    try {
+      if (selectedId) {
+        await apiFetch(`/admin/users/${selectedId}`, { method: "PUT", body: JSON.stringify(body) }, token);
+      } else {
+        await apiFetch(`/admin/users`, { method: "POST", body: JSON.stringify(body) }, token);
+      }
+      closeModal();
+      await load();
+    } catch (err: any) {
+      alert(err.message);
     }
-    clear();
-    await load();
   };
 
   const remove = async (id: number) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa không?")) return;
     if (!token) return;
-    await apiFetch(`/admin/users/${id}`, { method: "DELETE" }, token);
-    await load();
+    try {
+      await apiFetch(`/admin/users/${id}`, { method: "DELETE" }, token);
+      await load();
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   return (
-    <div className="split" style={{ alignItems: "start" }}>
-      <Section title={selectedId ? "Chỉnh sửa" : "Tạo người dùng"} subtitle="Thông tin tài khoản">
-        <form className="stack" onSubmit={submit}>
-          <label className="field-group"><span>Tên đăng nhập</span><Input value={form.username} onChange={(event) => setForm((value) => ({ ...value, username: event.target.value }))} disabled={Boolean(selectedId)} /></label>
-          <label className="field-group"><span>Họ tên</span><Input value={form.fullName} onChange={(event) => setForm((value) => ({ ...value, fullName: event.target.value }))} /></label>
-          <label className="field-group"><span>Email</span><Input value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} /></label>
-          <label className="field-group"><span>Mật khẩu {selectedId ? "(để trống = giữ nguyên)" : ""}</span><Input type="password" value={form.password} onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))} /></label>
-          <div className="form-grid form-columns-2">
-            <label className="field-group"><span>Vai trò</span><Select value={form.role} onChange={(event) => setForm((value) => ({ ...value, role: event.target.value }))}><option value="USER">USER</option><option value="ADMIN">ADMIN</option></Select></label>
-            <label className="field-group"><span>Trạng thái</span><Select value={form.status} onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}><option value="ACTIVE">ACTIVE</option><option value="LOCKED">LOCKED</option></Select></label>
-          </div>
-          <Button type="submit" size="sm">
-            <Save size={14} />
-            <span>{selectedId ? "Cập nhật" : "Tạo"}</span>
-          </Button>
-        </form>
-      </Section>
-
+    <div style={{ position: "relative" }}>
       <Section
         title="Quản lý người dùng"
         subtitle="Danh sách tài khoản trong hệ thống."
         actions={
-          <Button variant="secondary" size="sm" onClick={clear}>
+          <Button variant="secondary" size="sm" onClick={create}>
             <Plus size={14} />
             <span>Tạo mới</span>
           </Button>
@@ -1719,9 +1718,35 @@ function AdminUsersSection({
               </tr>
             ))}
           </Table>
-          {!users.length ? <EmptyState title="Chưa có người dùng" /> : null}
+          {!loading && !users.length ? <EmptyState title="Chưa có người dùng" /> : null}
         </div>
       </Section>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => e.target === e.currentTarget && closeModal()}>
+          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 500, border: "1px solid var(--border)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>{selectedId ? "Chỉnh sửa người dùng" : "Tạo người dùng"}</h3>
+            <form className="stack" onSubmit={submit}>
+              <label className="field-group"><span>Tên đăng nhập</span><Input value={form.username} onChange={(event) => setForm((value) => ({ ...value, username: event.target.value }))} disabled={Boolean(selectedId)} autoFocus={!selectedId} /></label>
+              <label className="field-group"><span>Họ tên</span><Input value={form.fullName} onChange={(event) => setForm((value) => ({ ...value, fullName: event.target.value }))} autoFocus={Boolean(selectedId)} /></label>
+              <label className="field-group"><span>Email</span><Input value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} /></label>
+              <label className="field-group"><span>Mật khẩu {selectedId ? "(để trống = giữ nguyên)" : ""}</span><Input type="password" value={form.password} onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))} /></label>
+              <div className="form-grid form-columns-2">
+                <label className="field-group"><span>Vai trò</span><Select value={form.role} onChange={(event) => setForm((value) => ({ ...value, role: event.target.value }))}><option value="USER">USER</option><option value="ADMIN">ADMIN</option></Select></label>
+                <label className="field-group"><span>Trạng thái</span><Select value={form.status} onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}><option value="ACTIVE">ACTIVE</option><option value="LOCKED">LOCKED</option></Select></label>
+              </div>
+              <div className="toolbar" style={{ justifyContent: "flex-end", gap: "1rem", marginTop: "1rem" }}>
+                <Button variant="secondary" type="button" onClick={closeModal}>Hủy</Button>
+                <Button type="submit">
+                  <Save size={14} />
+                  <span>{selectedId ? "Cập nhật" : "Tạo"}</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
