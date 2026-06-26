@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { Users, Crown, Medal, Play, Trophy, Clock, Target, AlertCircle, RefreshCw } from "lucide-react";
+import { Users, Crown, Medal, Play, Trophy, Clock, Target, AlertCircle, RefreshCw, Settings } from "lucide-react";
 import { Button, Input, Section, EmptyState, Badge } from "./common";
 import { apiFetch, getApiBase } from "@/api/client";
 import confetti from "canvas-confetti";
@@ -446,8 +446,8 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                     <option value="">-- Chọn bộ đề --</option>
                     {(() => {
                       const sortedBanks = [...publicBanks].sort((a, b) => {
-                        const nameA = a.subject?.name || a.name;
-                        const nameB = b.subject?.name || b.name;
+                        const nameA = a.subject?.name || a.name || "";
+                        const nameB = b.subject?.name || b.name || "";
                         return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
                       });
                       return sortedBanks.map(bank => (
