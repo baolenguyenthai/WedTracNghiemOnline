@@ -214,6 +214,10 @@ adminRouter.put(
       throw new AppError(404, "Không tìm thấy người dùng.");
     }
 
+    if (user.vaiTro?.name === "ADMIN" && id !== req.user!.id) {
+      throw new AppError(403, "Không thể chỉnh sửa thông tin của quản trị viên khác.");
+    }
+
     const body = req.body as Record<string, unknown>;
     const fullName = String(body.fullName ?? user.fullName).trim();
     const email = String(body.email ?? user.email).trim();
@@ -257,6 +261,17 @@ adminRouter.delete(
     const id = Number(req.params.id);
     if (id === req.user!.id) {
       throw new AppError(400, "Không thể tự xóa chính mình.");
+    }
+
+    const userToDelete = await prisma.user.findUnique({
+      where: { id },
+      include: { vaiTro: true }
+    });
+    if (!userToDelete) {
+      throw new AppError(404, "Không tìm thấy người dùng.");
+    }
+    if (userToDelete.vaiTro?.name === "ADMIN") {
+      throw new AppError(403, "Không thể xóa tài khoản quản trị viên.");
     }
     
     const examsCount = await prisma.exam.count({ where: { userId: id } });

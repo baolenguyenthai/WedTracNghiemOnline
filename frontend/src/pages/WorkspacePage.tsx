@@ -1590,6 +1590,7 @@ function AdminUsersSection({
   token: string | null;
   onUserUpdated: (user: AuthUser) => void;
 }) {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -1711,8 +1712,12 @@ function AdminUsersSection({
                 </td>
                 <td>
                   <div className="toolbar gap-xs">
-                    <Button variant="secondary" size="sm" onClick={() => edit(user)}><Edit3 size={13} /></Button>
-                    <Button variant="danger" size="sm" onClick={() => remove(user.id)}><Trash2 size={13} /></Button>
+                    {(user.role !== "ADMIN" || user.id === currentUser?.id) && (
+                      <Button variant="secondary" size="sm" onClick={() => edit(user)}><Edit3 size={13} /></Button>
+                    )}
+                    {user.role !== "ADMIN" && (
+                      <Button variant="danger" size="sm" onClick={() => remove(user.id)}><Trash2 size={13} /></Button>
+                    )}
                   </div>
                 </td>
               </tr>
