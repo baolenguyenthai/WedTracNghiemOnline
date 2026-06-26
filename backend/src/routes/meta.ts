@@ -11,7 +11,25 @@ metaRouter.get(
   "/grades",
   asyncHandler(async (_req, res) => {
     const grades = await prisma.grade.findMany();
-    grades.sort((a, b) => a.name.localeCompare(b.name, "vi", { numeric: true, sensitivity: "base" }));
+    
+    const gradeOrder: Record<string, number> = {
+      "Tiểu học": 1,
+      "THCS": 2,
+      "THPT": 3,
+      "Đại học": 4
+    };
+
+    grades.sort((a, b) => {
+      const orderA = gradeOrder[a.name] || 99;
+      const orderB = gradeOrder[b.name] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      return a.name.localeCompare(b.name, "vi", { numeric: true, sensitivity: "base" });
+    });
+
     res.json(ok({ grades }));
   })
 );

@@ -139,7 +139,8 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
     if (token) {
       apiFetch<{ banks: any[] }>("/banks", {}, token).then(res => {
-        setPublicBanks(res.data.banks);
+        const sortedBanks = res.data.banks.sort((a, b) => a.name.localeCompare(b.name, "vi", { sensitivity: "base" }));
+        setPublicBanks(sortedBanks);
       }).catch(err => {
         console.error("Failed to load public banks", err);
       });
