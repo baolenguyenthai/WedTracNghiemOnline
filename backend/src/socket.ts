@@ -220,6 +220,31 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       }
     });
 
+    socket.on("playAgain", ({ roomId }) => {
+      const room = rooms.get(roomId);
+      if (room && room.hostId === socket.id && room.status === "FINISHED") {
+        room.status = "LOBBY";
+        room.currentQuestionIndex = -1;
+        room.players.forEach(p => {
+          p.score = 0;
+          p.answers = [];
+          p.hasAnsweredCurrent = false;
+        });
+        io.to(roomId).emit("roomUpdated", getRoomState(room));
+      }
+    });
+
+    socket.on("updateRoom", ({ roomId, bankId, questions, gameMode, timeLimitPerQuestion }) => {
+      const room = rooms.get(roomId);
+      if (room && room.hostId === socket.id && room.status === "LOBBY") {
+        if (bankId) room.bankId = bankId;
+        if (questions) room.questions = questions;
+        if (gameMode) room.gameMode = gameMode;
+        if (timeLimitPerQuestion) room.timeLimitPerQuestion = timeLimitPerQuestion;
+        io.to(roomId).emit("roomUpdated", getRoomState(room));
+      }
+    });
+
     socket.on("disconnect", () => {
       // Dọn dẹp phòng khi user thoát
       for (const [roomId, room] of rooms.entries()) {

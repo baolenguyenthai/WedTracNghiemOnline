@@ -419,7 +419,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
           
           <div style={{ marginTop: "2rem" }}>
             {isHost ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem" }}>
                 <QRCodeSVG value={`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`} size={160} style={{ margin: "0 auto" }} />
                 <Button variant="ghost" size="sm" onClick={() => {
                   navigator.clipboard.writeText(`${window.location.origin}/app?section=multiplayer&room=${roomState.roomId}`);
@@ -427,8 +427,66 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                 }}>
                   Copy Link Tham Gia
                 </Button>
+
+                {/* Host Settings in Lobby */}
+                <div className="card" style={{ width: "100%", maxWidth: "500px", textAlign: "left", marginTop: "1rem" }}>
+                  <h4 style={{ marginBottom: "1rem" }}><Settings size={16} className="inline-icon" /> Cài đặt phòng</h4>
+                  <select 
+                    value={selectedBankId} 
+                    onChange={async (e) => {
+                      const newBankId = e.target.value;
+                      setSelectedBankId(newBankId);
+                      if (newBankId) {
+                        try {
+                          const res = await apiFetch<{ bank: any, questions: any[] }>(`/banks/${newBankId}/preview?questionCount=${questionCount}`, {}, token);
+                          socket?.emit("updateRoom", { roomId: roomState.roomId, bankId: Number(newBankId), questions: res.data.questions });
+                        } catch (err) {}
+                      }
+                    }}
+                    style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", marginBottom: "1rem" }}
+                  >
+                    <option value="">-- Chọn bộ đề --</option>
+                    {(() => {
+                      const sortedBanks = [...publicBanks].sort((a, b) => {
+                        const nameA = a.subject?.name || a.name;
+                        const nameB = b.subject?.name || b.name;
+                        return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
+                      });
+                      return sortedBanks.map(bank => (
+                        <option key={bank.id} value={bank.id}>
+                          {bank.subject?.name || bank.name} ({bank._count?.questions || bank.questionsCount || bank.questionCount || 0} câu)
+                        </option>
+                      ));
+                    })()}
+                  </select>
+
+                  <div className="form-grid form-columns-2" style={{ marginBottom: "1rem" }}>
+                    <label className="field-group">
+                      <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Chế độ chơi</span>
+                      <select 
+                        value={gameMode} 
+                        onChange={(e: any) => {
+                          setGameMode(e.target.value);
+                          socket?.emit("updateRoom", { roomId: roomState.roomId, gameMode: e.target.value });
+                        }}
+                        style={{ padding: "0.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)" }}
+                      >
+                        <option value="SYNCHRONOUS">Đồng bộ (Kahoot)</option>
+                        <option value="INDEPENDENT">Tự do (Cá nhân)</option>
+                      </select>
+                    </label>
+                    <label className="field-group">
+                      <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Thời gian (giây)</span>
+                      <Input type="number" min={10} max={300} value={timeLimitPerQuestion} onChange={(e) => {
+                        setTimeLimitPerQuestion(Number(e.target.value));
+                        socket?.emit("updateRoom", { roomId: roomState.roomId, timeLimitPerQuestion: Number(e.target.value) });
+                      }} />
+                    </label>
+                  </div>
+                </div>
+
                 <div>
-                  <Button onClick={startGame} disabled={roomState.players.length < 1}>
+                  <Button onClick={startGame} disabled={roomState.players.length < 1 || !selectedBankId}>
                     <Play size={18} /> BẮT ĐẦU TRẬN ĐẤU
                   </Button>
                 </div>
@@ -695,47 +753,54 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
             <p style={{ opacity: 0.7, fontSize: "0.9rem", marginBottom: "1.5rem" }}>
               Danh sách đáp án bạn đã chọn so với đáp án đúng.
             </p>
-            <div className="stack" style={{ gap: "1.5rem" }}>
-              {roomState.questions.map((q: any, i: number) => {
-                const myAnswerId = myPlayer?.answers?.[i];
-                return (
-                  <div key={q.id} style={{ background: "var(--bg)", padding: "1.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
-                    <div style={{ fontWeight: "bold", marginBottom: "1rem", fontSize: "1.1rem" }}>Câu {i + 1}: {q.content}</div>
-                    <div className="stack" style={{ gap: "0.5rem" }}>
-                      {q.answers.map((ans: any) => {
-                        const isCorrect = ans.isCorrect;
-                        const isMySelection = ans.id === myAnswerId;
-                        let bg = "var(--bg-surface)";
-                        let border = "1px solid var(--border)";
-                        let icon = null;
-                        
-                        if (isCorrect) {
-                          bg = "rgba(34,197,94,0.1)";
-                          border = "1px solid var(--success)";
-                          icon = <span style={{ color: "var(--success)", fontWeight: "bold" }}>✔️ Đáp án đúng{isMySelection && " (Bạn chọn)"}</span>;
-                        } else if (isMySelection) {
-                          bg = "rgba(239,68,68,0.1)";
-                          border = "1px solid var(--danger)";
-                          icon = <span style={{ color: "var(--danger)", fontWeight: "bold" }}>❌ Bạn chọn sai</span>;
-                        }
+            <div style={{ maxHeight: "400px", overflowY: "auto", paddingRight: "1rem" }}>
+              <div className="stack" style={{ gap: "1.5rem" }}>
+                {roomState.questions.map((q: any, i: number) => {
+                  const myAnswerId = myPlayer?.answers?.[i];
+                  return (
+                    <div key={q.id} style={{ background: "var(--bg)", padding: "1.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)" }}>
+                      <div style={{ fontWeight: "bold", marginBottom: "1rem", fontSize: "1.1rem" }}>Câu {i + 1}: {q.content}</div>
+                      <div className="stack" style={{ gap: "0.5rem" }}>
+                        {q.answers.map((ans: any) => {
+                          const isCorrect = ans.isCorrect;
+                          const isMySelection = ans.id === myAnswerId;
+                          let bg = "var(--bg-surface)";
+                          let border = "1px solid var(--border)";
+                          let icon = null;
+                          
+                          if (isCorrect) {
+                            bg = "rgba(34,197,94,0.1)";
+                            border = "1px solid var(--success)";
+                            icon = <span style={{ color: "var(--success)", fontWeight: "bold" }}>✔️ Đáp án đúng{isMySelection && " (Bạn chọn)"}</span>;
+                          } else if (isMySelection) {
+                            bg = "rgba(239,68,68,0.1)";
+                            border = "1px solid var(--danger)";
+                            icon = <span style={{ color: "var(--danger)", fontWeight: "bold" }}>❌ Bạn chọn sai</span>;
+                          }
 
-                        return (
-                          <div key={ans.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem", borderRadius: "var(--radius)", background: bg, border }}>
-                            <span>{ans.content}</span>
-                            {icon}
-                          </div>
-                        );
-                      })}
+                          return (
+                            <div key={ans.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem", borderRadius: "var(--radius)", background: bg, border }}>
+                              <span>{ans.content}</span>
+                              {icon}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
 
-        <div style={{ textAlign: "center", marginTop: "2rem" }}>
-          <Button onClick={leaveRoom}>Rời phòng</Button>
+        <div style={{ textAlign: "center", marginTop: "2rem", display: "flex", gap: "1rem", justifyContent: "center" }}>
+          {socket?.id === roomState.hostId && (
+            <Button onClick={() => socket.emit("playAgain", { roomId: roomState.roomId })} variant="primary">
+              Chơi lại / Cài đặt lại
+            </Button>
+          )}
+          <Button onClick={leaveRoom} variant="ghost">Rời phòng</Button>
         </div>
       </Section>
     );
