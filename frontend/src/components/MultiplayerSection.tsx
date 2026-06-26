@@ -98,9 +98,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
       setLocalQuestionIndex(0);
       setIsIndependentFinished(false);
       setSelectedAnswer(null);
-      
-      // Server doesn't send timeLimitPerQuestion in gameStarted yet, it's in roomState.
-      // We will set timeLeft when roomState is available.
+      setTimeLeft(-1);
     });
 
     newSocket.on("questionStarted", (data) => {
