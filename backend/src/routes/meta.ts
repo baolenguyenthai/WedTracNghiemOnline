@@ -11,7 +11,7 @@ metaRouter.get(
   "/grades",
   asyncHandler(async (_req, res) => {
     const grades = await prisma.grade.findMany();
-    grades.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+    grades.sort((a, b) => a.name.localeCompare(b.name, "vi", { numeric: true, sensitivity: "base" }));
     res.json(ok({ grades }));
   })
 );
@@ -19,7 +19,8 @@ metaRouter.get(
 metaRouter.get(
   "/subjects",
   asyncHandler(async (_req, res) => {
-    const subjects = await prisma.subject.findMany({ orderBy: { name: "asc" } });
+    const subjects = await prisma.subject.findMany();
+    subjects.sort((a, b) => a.name.localeCompare(b.name, "vi", { sensitivity: "base" }));
     res.json(ok({ subjects }));
   })
 );
