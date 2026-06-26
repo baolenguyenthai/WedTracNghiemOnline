@@ -481,6 +481,22 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                       }} />
                     </label>
                   </div>
+
+                  <div className="form-grid form-columns-2" style={{ marginBottom: "1rem" }}>
+                    <label className="checkbox-label" style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+                      <input type="checkbox" checked={shuffleQuestions} onChange={(e) => {
+                        setShuffleQuestions(e.target.checked);
+                        socket?.emit("updateRoom", { roomId: roomState.roomId, shuffleQuestions: e.target.checked });
+                      }} disabled={gameMode === "SYNCHRONOUS"} /> 
+                      Trộn câu hỏi {gameMode === "SYNCHRONOUS" && "(Không hỗ trợ)"}
+                    </label>
+                    <label className="checkbox-label" style={{ fontSize: "0.85rem", opacity: 0.8 }}>
+                      <input type="checkbox" checked={shuffleAnswers} onChange={(e) => {
+                        setShuffleAnswers(e.target.checked);
+                        socket?.emit("updateRoom", { roomId: roomState.roomId, shuffleAnswers: e.target.checked });
+                      }} /> Trộn đáp án
+                    </label>
+                  </div>
                 </div>
 
                 <div>

@@ -234,13 +234,15 @@ export function setupSocketIO(server: HttpServer, corsOrigin: string) {
       }
     });
 
-    socket.on("updateRoom", ({ roomId, bankId, questions, gameMode, timeLimitPerQuestion }) => {
+    socket.on("updateRoom", ({ roomId, bankId, questions, gameMode, timeLimitPerQuestion, shuffleQuestions, shuffleAnswers }) => {
       const room = rooms.get(roomId);
       if (room && room.hostId === socket.id && room.status === "LOBBY") {
         if (bankId) room.bankId = bankId;
         if (questions) room.questions = questions;
         if (gameMode) room.gameMode = gameMode;
         if (timeLimitPerQuestion) room.timeLimitPerQuestion = timeLimitPerQuestion;
+        if (shuffleQuestions !== undefined) room.shuffleQuestions = shuffleQuestions;
+        if (shuffleAnswers !== undefined) room.shuffleAnswers = shuffleAnswers;
         io.to(roomId).emit("roomUpdated", getRoomState(room));
       }
     });
