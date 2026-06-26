@@ -342,23 +342,16 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
               >
                 <option value="">-- Chọn bộ đề --</option>
                 {(() => {
-                  const grouped = publicBanks.reduce((acc, bank) => {
-                    const sName = bank.subject?.name || "Khác";
-                    if (!acc[sName]) acc[sName] = [];
-                    acc[sName].push(bank);
-                    return acc;
-                  }, {} as Record<string, any[]>);
-                  
-                  const sortedSubjects = Object.keys(grouped).sort((a, b) => a.localeCompare(b, "vi", { sensitivity: "base" }));
-                  
-                  return sortedSubjects.map(subject => (
-                    <optgroup key={subject} label={subject}>
-                      {grouped[subject].sort((a: any, b: any) => a.name.localeCompare(b.name, "vi", { sensitivity: "base" })).map((bank: any) => (
-                        <option key={bank.id} value={bank.id}>
-                          {bank.name} ({bank._count?.questions || 0} câu)
-                        </option>
-                      ))}
-                    </optgroup>
+                  const sortedBanks = [...publicBanks].sort((a, b) => {
+                    const nameA = a.subject?.name || a.name;
+                    const nameB = b.subject?.name || b.name;
+                    return nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
+                  });
+
+                  return sortedBanks.map(bank => (
+                    <option key={bank.id} value={bank.id}>
+                      {bank.subject?.name || bank.name} ({bank._count?.questions || bank.questionsCount || bank.questionCount || 0} câu)
+                    </option>
                   ));
                 })()}
               </select>
