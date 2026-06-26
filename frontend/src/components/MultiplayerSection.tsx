@@ -430,7 +430,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                 <div className="card" style={{ width: "100%", maxWidth: "500px", textAlign: "left", marginTop: "1rem" }}>
                   <h4 style={{ marginBottom: "1rem" }}><Settings size={16} className="inline-icon" /> Cài đặt phòng</h4>
                   <select 
-                    value={selectedBankId} 
+                    value={selectedBankId || roomState?.bankId || ""} 
                     onChange={async (e) => {
                       const newBankId = e.target.value;
                       setSelectedBankId(newBankId);
@@ -500,7 +500,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                 </div>
 
                 <div>
-                  <Button onClick={startGame} disabled={roomState.players.length < 1 || !selectedBankId}>
+                  <Button onClick={startGame} disabled={roomState.players.length < 1 || !(selectedBankId || roomState?.bankId)}>
                     <Play size={18} /> BẮT ĐẦU TRẬN ĐẤU
                   </Button>
                 </div>
