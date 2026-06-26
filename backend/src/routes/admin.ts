@@ -146,9 +146,28 @@ adminRouter.get(
       include: {
         vaiTro: true
       }
+    users.sort((a, b) => {
+      // 1. Sort by Role (Admin first)
+      const roleA = a.vaiTro?.name === "ADMIN" ? 0 : 1;
+      const roleB = b.vaiTro?.name === "ADMIN" ? 0 : 1;
+      if (roleA !== roleB) return roleA - roleB;
+
+      // 2. Sort by Last Name (Tên)
+      const getLastName = (fullName: string | null) => {
+        if (!fullName) return "";
+        const parts = fullName.trim().split(/\s+/);
+        return parts[parts.length - 1];
+      };
+
+      const nameA = getLastName(a.fullName);
+      const nameB = getLastName(b.fullName);
+      const cmp = nameA.localeCompare(nameB, "vi", { sensitivity: "base" });
+      
+      if (cmp !== 0) return cmp;
+
+      // 3. Fallback to Full Name if Last Name is identical
+      return (a.fullName || "").localeCompare(b.fullName || "", "vi", { sensitivity: "base" });
     });
-    
-    users.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "", "vi", { sensitivity: "base" }));
     res.json(ok({ users: users.map(toSafeUser) }));
   })
 );
