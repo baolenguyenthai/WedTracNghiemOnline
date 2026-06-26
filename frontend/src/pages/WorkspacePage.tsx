@@ -1384,7 +1384,7 @@ function ProfileSection({
       )}
 
       {/* Profile header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", padding: "1rem", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", padding: "1rem", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid var(--border)" }}>
         <label
           style={{
             position: "relative",
@@ -1520,7 +1520,7 @@ function AdminOverviewSection({ token }: { token: string | null }) {
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
                     <XAxis type="number" />
                     <YAxis type="category" dataKey="user.fullName" width={120} tick={{ fontSize: 12, fill: "var(--text-secondary)" }} />
-                    <Tooltip cursor={{ fill: "rgba(139, 92, 246, 0.1)" }} contentStyle={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text)" }} />
+                    <Tooltip cursor={{ fill: "rgba(139, 92, 246, 0.1)" }} contentStyle={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", color: "var(--text)" }} />
                     <Bar dataKey="count" fill="var(--primary)" name="Lượt thi" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -1730,7 +1730,7 @@ function AdminUsersSection({
       {/* Modal */}
       {isModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => e.target === e.currentTarget && closeModal()}>
-          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 500, border: "1px solid var(--border)", maxHeight: "90vh", overflowY: "auto" }}>
+          <div style={{ background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 500, border: "1px solid var(--border)", maxHeight: "90vh", overflowY: "auto" }}>
             <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>{selectedId ? "Chỉnh sửa người dùng" : "Tạo người dùng"}</h3>
             <form className="stack" onSubmit={submit}>
               <label className="field-group"><span>Tên đăng nhập</span><Input value={form.username} onChange={(event) => setForm((value) => ({ ...value, username: event.target.value }))} disabled={Boolean(selectedId)} autoFocus={!selectedId} /></label>
@@ -1880,7 +1880,7 @@ function AdminCatalogSection({
       {/* Modal Sửa Cấp học */}
       {editingGrade && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => e.target === e.currentTarget && setEditingGrade(null)}>
-          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
+          <div style={{ background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
             <h3 style={{ marginTop: 0 }}>Sửa cấp học</h3>
             <Input value={editingGrade.name} onChange={(e) => setEditingGrade({ ...editingGrade, name: e.target.value })} style={{ marginBottom: "1.5rem" }} autoFocus />
             <div className="toolbar" style={{ justifyContent: "flex-end", gap: "1rem" }}>
@@ -1894,7 +1894,7 @@ function AdminCatalogSection({
       {/* Modal Sửa Môn học */}
       {editingSubject && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }} onClick={(e) => e.target === e.currentTarget && setEditingSubject(null)}>
-          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
+          <div style={{ background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 400, border: "1px solid var(--border)" }}>
             <h3 style={{ marginTop: 0 }}>Sửa môn học</h3>
             <Input value={editingSubject.name} onChange={(e) => setEditingSubject({ ...editingSubject, name: e.target.value })} style={{ marginBottom: "1.5rem" }} autoFocus />
             <div className="toolbar" style={{ justifyContent: "flex-end", gap: "1rem" }}>
@@ -2336,7 +2336,7 @@ function AdminBanksSection({
               {/* Modals */}
               {isBankModalOpen && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "2rem 1rem", overflowY: "auto" }} onClick={(e) => e.target === e.currentTarget && setIsBankModalOpen(false)}>
-                  <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 600, border: "1px solid var(--border)" }}>
+                  <div style={{ background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 600, border: "1px solid var(--border)" }}>
                     <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>Sửa thông tin bộ đề</h3>
                     <div className="stack" style={{ gap: "1rem" }}>
                       <label className="field-group"><span>Tên bộ đề</span><Input value={selectedBank.name} onChange={(event) => setSelectedBank((value) => value ? ({ ...value, name: event.target.value }) : value)} /></label>
@@ -2372,7 +2372,7 @@ function AdminBanksSection({
 
               {isQuestionModalOpen && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "2rem 1rem", overflowY: "auto" }} onClick={(e) => e.target === e.currentTarget && setIsQuestionModalOpen(false)}>
-                  <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 600, border: "1px solid var(--border)" }}>
+                  <div style={{ background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", padding: "2rem", borderRadius: "var(--radius-xl)", width: "100%", maxWidth: 600, border: "1px solid var(--border)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
                       <h3 style={{ margin: 0 }}>{editingQuestionId ? "Sửa câu hỏi" : "Thêm câu hỏi"}</h3>
                       <button onClick={() => setIsQuestionModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}><X size={20}/></button>
@@ -2470,7 +2470,7 @@ function AdminStatsSection({ token }: { token: string | null }) {
                     <XAxis dataKey="subjectName" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} />
                     <YAxis yAxisId="left" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} />
-                    <Tooltip contentStyle={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text)" }} />
+                    <Tooltip contentStyle={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", color: "var(--text)" }} />
                     <Legend wrapperStyle={{ paddingTop: "10px" }} />
                     <Bar yAxisId="left" dataKey="totalExams" name="Lượt thi" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={50} />
                     <Line yAxisId="right" type="monotone" dataKey="avgScore" name="Điểm TB" stroke="var(--warning)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
@@ -2498,7 +2498,7 @@ function AdminStatsSection({ token }: { token: string | null }) {
                         return <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />;
                       })}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text)" }} />
+                    <Tooltip contentStyle={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border)", background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", color: "var(--text)" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -2627,7 +2627,7 @@ function AdminExamsSection({ token }: { token: string | null }) {
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.65)", zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "2rem 1rem", overflowY: "auto" }}
           onClick={e => { if (e.target === e.currentTarget) setDetail(null); }}
         >
-          <div style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "1.5rem", width: "100%", maxWidth: 720, position: "relative" }}>
+          <div style={{ background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid var(--border)", borderRadius: "var(--radius-xl)", padding: "1.5rem", width: "100%", maxWidth: 720, position: "relative" }}>
             <button onClick={() => setDetail(null)} style={{ position: "absolute", top: "1rem", right: "1rem", background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: "1.2rem" }}>✕</button>
 
             {/* Header */}
