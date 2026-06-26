@@ -13,10 +13,10 @@ metaRouter.get(
     const grades = await prisma.grade.findMany();
     
     const gradeOrder: Record<string, number> = {
-      "Tiểu học": 1,
-      "THCS": 2,
-      "THPT": 3,
-      "Đại học": 4
+      "Đại học": 1,
+      "THPT": 2,
+      "THCS": 3,
+      "Tiểu học": 4
     };
 
     grades.sort((a, b) => {
