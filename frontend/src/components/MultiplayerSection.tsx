@@ -341,11 +341,26 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                 style={{ width: "100%", padding: "0.5rem", borderRadius: "var(--radius)", border: "1px solid var(--border)", background: "var(--bg)", color: "var(--text)", marginBottom: "1rem" }}
               >
                 <option value="">-- Chọn bộ đề --</option>
-                {publicBanks.map(bank => (
-                  <option key={bank.id} value={bank.id}>
-                    {bank.subject?.name || bank.name} ({bank._count?.questions || 0} câu)
-                  </option>
-                ))}
+                {(() => {
+                  const grouped = publicBanks.reduce((acc, bank) => {
+                    const sName = bank.subject?.name || "Khác";
+                    if (!acc[sName]) acc[sName] = [];
+                    acc[sName].push(bank);
+                    return acc;
+                  }, {} as Record<string, any[]>);
+                  
+                  const sortedSubjects = Object.keys(grouped).sort((a, b) => a.localeCompare(b, "vi", { sensitivity: "base" }));
+                  
+                  return sortedSubjects.map(subject => (
+                    <optgroup key={subject} label={subject}>
+                      {grouped[subject].sort((a: any, b: any) => a.name.localeCompare(b.name, "vi", { sensitivity: "base" })).map((bank: any) => (
+                        <option key={bank.id} value={bank.id}>
+                          {bank.name} ({bank._count?.questions || 0} câu)
+                        </option>
+                      ))}
+                    </optgroup>
+                  ));
+                })()}
               </select>
 
               <div className="form-grid form-columns-2" style={{ marginBottom: "1rem" }}>
