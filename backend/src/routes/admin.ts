@@ -148,7 +148,7 @@ adminRouter.get(
       }
     });
     
-    users.sort((a, b) => a.fullName.localeCompare(b.fullName, "vi", { sensitivity: "base" }));
+    users.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || "", "vi", { sensitivity: "base" }));
     res.json(ok({ users: users.map(toSafeUser) }));
   })
 );
