@@ -437,7 +437,7 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
             {roomState.players.map((p: any) => (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem", background: "var(--bg)", borderRadius: "var(--radius)", border: p.id === socket?.id ? "1px solid var(--primary)" : "1px solid var(--border)" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: p.id === roomState.hostId ? "gold" : "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold", overflow: "hidden" }}>
+                <div style={{ width: 32, height: 32, flexShrink: 0, borderRadius: "50%", background: p.id === roomState.hostId ? "gold" : "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "bold", overflow: "hidden" }}>
                   {p.avatarUrl ? (
                     <img src={p.avatarUrl.startsWith('http') ? p.avatarUrl : `${getApiBase().replace('/api', '')}${p.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
