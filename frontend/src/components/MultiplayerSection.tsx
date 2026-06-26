@@ -371,7 +371,16 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                 </label>
                 <label className="field-group">
                   <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Số câu hỏi</span>
-                  <Input type="number" min={1} max={100} value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} />
+                  <Input type="number" min={1} max={100} value={questionCount} onChange={(e) => {
+                    let newCount = Number(e.target.value);
+                    const currentBank = publicBanks.find(b => b.id === Number(selectedBankId));
+                    const maxQuestions = currentBank?._count?.questions || currentBank?.questionsCount || currentBank?.questionCount || 0;
+                    if (maxQuestions > 0 && newCount > maxQuestions) {
+                      alert(`Bộ đề này chỉ có tối đa ${maxQuestions} câu hỏi!`);
+                      newCount = maxQuestions;
+                    }
+                    setQuestionCount(newCount);
+                  }} />
                 </label>
               </div>
 
@@ -462,9 +471,16 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
                     <label className="field-group">
                       <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Số câu hỏi</span>
                       <Input type="number" min={1} max={100} value={questionCount} onChange={async (e) => {
-                        const newCount = Number(e.target.value);
-                        setQuestionCount(newCount);
+                        let newCount = Number(e.target.value);
                         const currentBankId = selectedBankId || roomState?.bankId;
+                        const currentBank = publicBanks.find(b => b.id === Number(currentBankId));
+                        const maxQuestions = currentBank?._count?.questions || currentBank?.questionsCount || currentBank?.questionCount || 0;
+                        if (maxQuestions > 0 && newCount > maxQuestions) {
+                          alert(`Bộ đề này chỉ có tối đa ${maxQuestions} câu hỏi!`);
+                          newCount = maxQuestions;
+                        }
+                        setQuestionCount(newCount);
+                        
                         if (currentBankId) {
                           try {
                             const res = await apiFetch<{ bank: any, questions: any[] }>(`/banks/${currentBankId}/preview?questionCount=${newCount}`, {}, token);
