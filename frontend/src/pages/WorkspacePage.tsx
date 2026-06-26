@@ -41,7 +41,8 @@ import {
   FileText,
   Eye,
   Camera,
-  Scan
+  Scan,
+  Crop
 } from "lucide-react";
 import { apiFetch, getApiBase } from "@/api/client";
 import { useAuth } from "@/auth/AuthContext";
@@ -632,6 +633,7 @@ function LeaderboardSection({
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
+    search: "",
     gradeId: "",
     subjectId: ""
   });
@@ -641,6 +643,7 @@ function LeaderboardSection({
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (filters.search) params.set("search", filters.search);
       if (filters.gradeId) params.set("gradeId", filters.gradeId);
       if (filters.subjectId) params.set("subjectId", filters.subjectId);
       const response = await apiFetch<{ leaderboard: LeaderboardRow[] }>(`/exams/leaderboard?${params.toString()}`, {}, token);
@@ -672,7 +675,13 @@ function LeaderboardSection({
         </Button>
       }
     >
-      <div className="toolbar mb-md gap-sm">
+      <form className="toolbar mb-md gap-sm" onSubmit={(e) => { e.preventDefault(); load(); }}>
+        <Input
+          value={filters.search}
+          onChange={(event) => setFilters((value) => ({ ...value, search: event.target.value }))}
+          placeholder="Tìm tên người dùng..."
+          style={{ maxWidth: 200 }}
+        />
         <Select
           value={filters.gradeId}
           onChange={(event) => setFilters((value) => ({ ...value, gradeId: event.target.value }))}
@@ -689,11 +698,11 @@ function LeaderboardSection({
           <option value="">Môn học</option>
           {catalog.subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
         </Select>
-        <Button size="sm" onClick={() => void load()}>
+        <Button type="submit" size="sm">
           <Search size={14} />
           <span>Lọc</span>
         </Button>
-      </div>
+      </form>
 
       {loading ? <LoadingState /> : null}
 
@@ -707,8 +716,19 @@ function LeaderboardSection({
                 </div>
               </td>
               <td>
-                <strong>{row.userName}</strong>
-                <div className="section-note">@{row.username}</div>
+                <div className="toolbar gap-sm">
+                  {row.avatarUrl ? (
+                    <img src={row.avatarUrl} alt={row.userName} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontWeight: 600, fontSize: "0.8rem" }}>
+                      {row.userName ? row.userName.charAt(0).toUpperCase() : "U"}
+                    </div>
+                  )}
+                  <div>
+                    <strong>{row.userName}</strong>
+                    <div className="section-note">@{row.username}</div>
+                  </div>
+                </div>
               </td>
               <td>{row.subjectName}</td>
               <td>{row.gradeName}</td>
@@ -1251,6 +1271,8 @@ function ProfileSection({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isCropping, setIsCropping] = useState(false);
+  
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
 
   useEffect(() => {
     setProfile({
@@ -1299,6 +1321,7 @@ function ProfileSection({
       const reader = new FileReader();
       reader.addEventListener("load", () => {
         setImageSrc(reader.result?.toString() || null);
+        setIsAvatarModalOpen(false); // Close viewing modal when cropping starts
       });
       reader.readAsDataURL(file);
     }
@@ -1383,9 +1406,65 @@ function ProfileSection({
         </div>
       )}
 
+      {/* Avatar View Modal */}
+      {isAvatarModalOpen && (
+        <div style={{
+          position: "fixed",
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.8)",
+          zIndex: 9998,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px"
+        }} onClick={(e) => e.target === e.currentTarget && setIsAvatarModalOpen(false)}>
+          <div style={{ background: "var(--bg-surface)", padding: "2rem", borderRadius: "12px", width: "100%", maxWidth: "400px", textAlign: "center" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "1.5rem" }}>Ảnh đại diện</h3>
+            
+            <div style={{ width: 200, height: 200, borderRadius: "50%", margin: "0 auto 2rem", overflow: "hidden", background: "var(--bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "4rem", fontWeight: "bold", border: "4px solid var(--border)" }}>
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${getApiBase().replace('/api', '')}${user.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                userInitial
+              )}
+            </div>
+
+            <div className="stack" style={{ gap: "0.75rem" }}>
+              <label style={{ cursor: "pointer", width: "100%" }}>
+                <div className="button button-primary" style={{ width: "100%", justifyContent: "center" }}>
+                  <Upload size={16} />
+                  <span>Tải ảnh mới</span>
+                </div>
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} onClick={(e) => (e.currentTarget.value = "")} />
+              </label>
+
+              {user?.avatarUrl && (
+                <Button 
+                  variant="secondary" 
+                  style={{ width: "100%", justifyContent: "center" }}
+                  onClick={() => {
+                    // Try to crop existing avatar
+                    setImageSrc(user.avatarUrl.startsWith('http') ? user.avatarUrl : `${getApiBase().replace('/api', '')}${user.avatarUrl}`);
+                    setIsAvatarModalOpen(false);
+                  }}
+                >
+                  <Crop size={16} />
+                  <span>Cắt lại ảnh hiện tại</span>
+                </Button>
+              )}
+
+              <Button variant="ghost" onClick={() => setIsAvatarModalOpen(false)} style={{ width: "100%", justifyContent: "center" }}>
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Profile header */}
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.25rem", padding: "1rem", borderRadius: "var(--radius-md)", background: "var(--bg-surface)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid var(--border)" }}>
-        <label
+        <div
+          onClick={() => setIsAvatarModalOpen(true)}
           style={{
             position: "relative",
             width: 64,
@@ -1402,7 +1481,7 @@ function ProfileSection({
             overflow: "hidden",
             border: "2px solid var(--primary-muted)"
           }}
-          title="Bấm để tải ảnh đại diện"
+          title="Bấm để xem/đổi ảnh đại diện"
         >
           {user?.avatarUrl ? (
             <img src={user.avatarUrl.startsWith('http') ? user.avatarUrl : `${getApiBase().replace('/api', '')}${user.avatarUrl}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1412,8 +1491,7 @@ function ProfileSection({
           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: "0.6rem", textAlign: "center", padding: "2px 0" }}>
             <Camera size={10} style={{ display: "inline-block", verticalAlign: "middle" }} />
           </div>
-          <input type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} onClick={(e) => (e.currentTarget.value = "")} />
-        </label>
+        </div>
         <div>
           <div style={{ fontWeight: 700 }}>{user?.fullName}</div>
           <div className="section-note">@{user?.username} · {user?.email}</div>
@@ -1701,8 +1779,19 @@ function AdminUsersSection({
             {users.map((user) => (
               <tr key={user.id}>
                 <td>
-                  <strong>{user.fullName}</strong>
-                  <div className="section-note">{user.username} · {user.email}</div>
+                  <div className="toolbar gap-sm">
+                    {user.avatarUrl ? (
+                      <img src={user.avatarUrl} alt={user.fullName} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontWeight: 600, fontSize: "0.8rem" }}>
+                        {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+                      </div>
+                    )}
+                    <div>
+                      <strong>{user.fullName}</strong>
+                      <div className="section-note">{user.username} · {user.email}</div>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <Badge tone={user.role === "ADMIN" ? "warning" : "primary"}>{user.role}</Badge>

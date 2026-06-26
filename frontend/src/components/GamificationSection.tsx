@@ -55,7 +55,7 @@ export function GamificationSection({ token }: GamificationSectionProps) {
       </div>
 
       <div className="stack">
-        <Section title="Bảng xếp hạng" subtitle="Top 10 học viên điểm cao nhất server">
+        <Section title="Bảng xếp hạng" subtitle="Top 5 học viên điểm cao nhất server">
           <div className="table-wrapper">
             <table>
               <thead>
@@ -72,7 +72,18 @@ export function GamificationSection({ token }: GamificationSectionProps) {
                     <td style={{ fontWeight: "bold", color: i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "#cd7f32" : "inherit" }}>
                       #{i + 1}
                     </td>
-                    <td>{u.fullName}</td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        {u.avatarUrl ? (
+                          <img src={u.avatarUrl} alt={u.fullName} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                        ) : (
+                          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg-muted)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", fontWeight: 600, fontSize: "0.8rem" }}>
+                            {u.fullName ? u.fullName.charAt(0).toUpperCase() : "U"}
+                          </div>
+                        )}
+                        <span>{u.fullName}</span>
+                      </div>
+                    </td>
                     <td style={{ textAlign: "right", fontWeight: "bold", color: "var(--primary)" }}>{Math.round(u.totalScore)}</td>
                     <td style={{ textAlign: "right", opacity: 0.7 }}>{u.examCount}</td>
                   </tr>

@@ -97,6 +97,7 @@ export interface LeaderboardRow {
   userId: number;
   userName: string;
   username: string;
+  avatarUrl: string | null;
   bankName: string;
   gradeName: string;
   subjectName: string;

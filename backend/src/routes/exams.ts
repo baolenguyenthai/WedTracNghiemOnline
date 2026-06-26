@@ -327,7 +327,7 @@ examsRouter.get(
       }
     });
 
-    const rows = exams
+    let rows = exams
       .sort((a, b) => {
         const aScore = a.score ?? 0;
         const bScore = b.score ?? 0;
@@ -337,13 +337,13 @@ examsRouter.get(
         if (aTime !== bTime) return aTime - bTime;
         return (a.submittedAt?.getTime() ?? 0) - (b.submittedAt?.getTime() ?? 0);
       })
-      .slice(0, 50)
       .map((exam, index) => ({
         rank: index + 1,
         examId: exam.id,
         userId: exam.userId ?? 0,
         userName: exam.user?.fullName ?? "",
         username: exam.user?.username ?? "",
+        avatarUrl: exam.user?.avatarUrl ?? null,
         bankName: exam.bank?.name ?? "",
         gradeName: exam.bank?.grade?.name ?? "",
         subjectName: exam.bank?.subject?.name ?? "",
@@ -353,6 +353,13 @@ examsRouter.get(
         durationSeconds: computeDurationSeconds(exam.startedAt, exam.submittedAt),
         submittedAt: exam.submittedAt
       }));
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase();
+      rows = rows.filter(r => r.userName.toLowerCase().includes(s) || r.username.toLowerCase().includes(s));
+    } else {
+      rows = rows.slice(0, 5);
+    }
 
     res.json(ok({ leaderboard: rows }));
   })

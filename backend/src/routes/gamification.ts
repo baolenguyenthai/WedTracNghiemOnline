@@ -51,13 +51,13 @@ gamificationRouter.get(
           score: "desc"
         }
       },
-      take: 10
+      take: 5
     });
 
     const userIds = topExams.map((e: any) => e.userId!).filter(Boolean);
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, fullName: true, username: true }
+      select: { id: true, fullName: true, username: true, avatarUrl: true }
     });
 
     const leaderboard = topExams.map((e: any) => {
@@ -65,6 +65,7 @@ gamificationRouter.get(
       return {
         userId: e.userId,
         fullName: u?.fullName || u?.username || "Ẩn danh",
+        avatarUrl: u?.avatarUrl || null,
         totalScore: e._sum.score || 0,
         examCount: e._count.id
       };

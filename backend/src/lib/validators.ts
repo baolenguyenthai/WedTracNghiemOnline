@@ -99,6 +99,7 @@ export const examSubmitSchema = z.object({
 });
 
 export const leaderboardQuerySchema = z.object({
+  search: z.string().optional(),
   gradeId: z.coerce.number().int().positive().optional(),
   subjectId: z.coerce.number().int().positive().optional()
 });
