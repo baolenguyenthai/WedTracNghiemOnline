@@ -460,6 +460,20 @@ export function MultiplayerSection({ token, user, catalog }: MultiplayerSectionP
 
                   <div className="form-grid form-columns-2" style={{ marginBottom: "1rem" }}>
                     <label className="field-group">
+                      <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Số câu hỏi</span>
+                      <Input type="number" min={1} max={100} value={questionCount} onChange={async (e) => {
+                        const newCount = Number(e.target.value);
+                        setQuestionCount(newCount);
+                        const currentBankId = selectedBankId || roomState?.bankId;
+                        if (currentBankId) {
+                          try {
+                            const res = await apiFetch<{ bank: any, questions: any[] }>(`/banks/${currentBankId}/preview?questionCount=${newCount}`, {}, token);
+                            socket?.emit("updateRoom", { roomId: roomState.roomId, questions: res.data.questions });
+                          } catch (err) {}
+                        }
+                      }} />
+                    </label>
+                    <label className="field-group">
                       <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Chế độ chơi</span>
                       <select 
                         value={gameMode} 
